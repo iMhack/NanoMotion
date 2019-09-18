@@ -1,32 +1,27 @@
 import sys
 import os
-
-import imageio
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
-# from nd2reader import ND2Reader
-
 import pims
 from PyQt5.QtGui import QPainter
 
 from skimage.color import rgb2gray
-
 from skimage.feature import register_translation
-
 import pandas as pd
 
 import seaborn as sns
 
 import os.path
 
-import threading
+from threading import Thread, RLock
 
+verrou = RLock()
 from PyQt5.QtWidgets import (QApplication, QPushButton, QGridLayout, QDialog, QLineEdit,
 
-                             QFileDialog, QWidget, QAction)
-from PyQt5.QtCore import QObject
+                             QFileDialog, QWidget, QAction, QProgressBar)
+from PyQt5.QtCore import QObject, pyqtSignal,QThread
 
 from PyQt5.uic import loadUiType
 
@@ -36,8 +31,10 @@ from matplotlib.backends.backend_qt5agg import (
 
 from decimal import *
 
+# To maintain the tips on editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
-from mainMenu import (Ui_MainWindow)
+from mainMenu import (Ui_MainWindow)  # This is used only to have the tips on editing.
+
 
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
@@ -50,6 +47,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.boxes_dict = []  # List of boxes to analyse
         self.plots_dict = {}  # List of plots to plot
         self.output_name = []
+        self.solver_list = []
 
         self.goodFile = 0
         self.orignalVideoLen = None
@@ -87,6 +85,9 @@ class Main(QMainWindow, Ui_MainWindow):
         self.v_rms = []
 
         self.test = None
+
+        self.QProgress = None
+
 
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
 
@@ -126,19 +127,12 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def showFile(self):
         print("\nshowFile")
-        #self.videodata = pims.Video(self.fileName)
+        # self.videodata = pims.Video(self.fileName)
         self.videodata = pims.ImageIOReader(self.fileName)
-        #self.videodata = pims.MoviePyReader(self.fileName)
+        # self.videodata = pims.MoviePyReader(self.fileName)
         print("\nShape of videodata[1] : ")
         print(type(self.videodata))
-        frame=self.videodata.get_frame(1)
-        shape=np.shape(frame)
-        print(shape)
-        print("--- ")
-        #frame = self.videodata[1]
-        #print(np.shape(frame))
-        #print("+++")
-        #self.videodata = imageio.get_reader(self.fileName)
+        shape = np.shape(self.videodata.get_frame(0))
         fig = Figure()
         sub = fig.add_subplot(111)
         sub.imshow(rgb2gray(self.videodata.get_frame(0)), cmap=plt.cm.gray)
@@ -190,6 +184,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.z_rms.clear()
         self.z_std.clear()
         self.v_rms.clear()
+        self.solver_list.clear()
         for i in range(len(self.boxes_dict)):
             self.output_name.append(create_dirs(self.fileName, str(i)))
             print("\nAnalysing " + self.output_name[i])
@@ -198,19 +193,30 @@ class Main(QMainWindow, Ui_MainWindow):
             print("\nSelected coordinates for polygon are: ", x_rect, y_rect)
             solver = Solver(videodata=self.videodata, fps=self.fps, res=self.res, w=self.w, h=self.h, x_rect=x_rect,
                             y_rect=y_rect)
-            solver.solve()
+            self.solver_list.append(solver)
+            self.solver_list[i].progressChanged.connect(self.updateProgress)
+            self.solver_list[i].start()
+        self.waitForSolver()
 
-            self.shift_x.append(solver.shift_x)
-            self.shift_y.append(solver.shift_y)
-            self.z_std.append(solver.get_z_std())
-            z_rms, v_rms = solver.get_z_delta_rms()
-            self.z_rms.append(z_rms)
-            self.v_rms.append(v_rms)
-            print("\nThread started. Waiting for it to finish")
-        print("\nappExec from Main.appExec finished")
+
+    def waitForSolver(self):
+        self.QProgress = QProgressBar()
+        self.QProgress.setGeometry(0, 0, 300, 25)
+        self.QProgress.show()
+            
+
+    def updateProgress(self, progress):
+        self.QProgress.setValue(progress)
 
     def showResults(self):
+        print(self.solver_list)
         for i in range(len(self.boxes_dict)):
+            self.shift_x.append(self.solver_list[i].shift_x)
+            self.shift_y.append(self.solver_list[i].shift_y)
+            self.z_std.append(self.solver_list[i].get_z_std())
+            z_rms, v_rms = self.solver_list[i].get_z_delta_rms()
+            self.z_rms.append(z_rms)
+            self.v_rms.append(v_rms)
             plot_results(self.shift_x[i], self.shift_y[i], self.fps, self.res, self.output_name[i], self.plots_dict)
         print("Plots showed")
 
@@ -313,8 +319,10 @@ class DraggableRectangle:
         self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
 
 
-class Solver():
+class Solver(QThread):
+    progressChanged = pyqtSignal(int)
     def __init__(self, videodata, fps, res, w, h, x_rect, y_rect):
+        QThread.__init__(self)
         self.videodata = videodata
         self.row_min = None
         self.row_max = None
@@ -334,25 +342,24 @@ class Solver():
         self.shift_x = []
         self.shift_y = []
 
-    def solve(self):
+    def run(self):
         self._crop_coord()
         self._calcul_phase_corr()
-        return self.shift_x, self.shift_y
 
     def _calcul_phase_corr(self):
         # calculate cross correlation for all frames for the selected  polygon crop
-        image_1 = rgb2gray(self.videodata.get_frame(0)[self.row_min:self.row_max, self.col_min:self.col_max])
-        proc = 0
-        #  for i in range(len(videodata)):
+        with verrou:
+            image_1 = rgb2gray(
+                self.videodata.get_frame(0)[self.row_min:self.row_max, self.col_min:self.col_max])  # Lock
         frames_n = 20
         my_upsample_factor = 100
         for i in range(frames_n):
-            #  if i % (int(len(videodata)/10)) == 0:
-            if i % (int(frames_n / 10)) == 0:
-                # print(str(proc) + "%: analyse frame " + str(i) + "/" + str(len(videodata)))
-                print(str(proc) + "%: analyse frame " + str(i) + "/" + str(frames_n))
-                proc += 10
-            image_2 = rgb2gray(self.videodata.get_frame(i)[self.row_min:self.row_max, self.col_min:self.col_max])
+            self.progress = int((i / (frames_n - 1))*100)
+            self.progressChanged.emit(self.progress)
+            print(str(self.progress) + "%: analyse frame " + str(i + 1) + "/" + str(frames_n))
+            with verrou:
+                image_2 = rgb2gray(
+                    self.videodata.get_frame(i)[self.row_min:self.row_max, self.col_min:self.col_max])  # Lock
             # subpixel precision
             shift, error, diffphase = register_translation(image_1, image_2, my_upsample_factor)
             self.shift_x.append(shift[1])
