@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1121</width>
+    <height>1016</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>LPVM-NanoMotionAnalysis</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QWidget" name="mplwindow" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <layout class="QVBoxLayout" name="mplvl"/>
+     </widget>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QListWidget" name="views">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListWidget" name="boxes">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1121</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionConvert"/>
+    <addaction name="actionExport_results"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <widget class="QMenu" name="menuView_plot">
+     <property name="title">
+      <string>View plot</string>
+     </property>
+     <addaction name="actionViolin"/>
+     <addaction name="actionPos"/>
+     <addaction name="actionx_shift"/>
+     <addaction name="actiony_shift"/>
+    </widget>
+    <addaction name="actionSubstract"/>
+    <addaction name="menuView_plot"/>
+    <addaction name="actionSub_frameset"/>
+   </widget>
+   <widget class="QMenu" name="menuSet_sensor">
+    <property name="title">
+     <string>Set sensor</string>
+    </property>
+    <addaction name="actionPixel_size"/>
+    <addaction name="actionMagnification"/>
+   </widget>
+   <widget class="QMenu" name="menuAnalyse_settings">
+    <property name="title">
+     <string>Analyse settings</string>
+    </property>
+    <addaction name="actionSub_pixel_level"/>
+    <addaction name="actionAdd_box"/>
+   </widget>
+   <widget class="QMenu" name="menuSTART">
+    <property name="title">
+     <string>START</string>
+    </property>
+    <addaction name="actionStart_analysis"/>
+    <addaction name="actionShow_results"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuView"/>
+   <addaction name="menuSet_sensor"/>
+   <addaction name="menuAnalyse_settings"/>
+   <addaction name="menuSTART"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+   <property name="statusTip">
+    <string>Open a file supported by PIMS (http://soft-matter.github.io/pims)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionConvert">
+   <property name="text">
+    <string>Convert</string>
+   </property>
+   <property name="statusTip">
+    <string>Convert the previously opened file to .mp4 using ffmpeg</string>
+   </property>
+  </action>
+  <action name="actionSubstract">
+   <property name="text">
+    <string>Substract</string>
+   </property>
+   <property name="statusTip">
+    <string>Substract the last frame from the 1st frame</string>
+   </property>
+  </action>
+  <action name="actionPixel_size">
+   <property name="text">
+    <string>Pixel size</string>
+   </property>
+  </action>
+  <action name="actionMagnification">
+   <property name="text">
+    <string>Magnification</string>
+   </property>
+   <property name="statusTip">
+    <string>Defines the optical zoom</string>
+   </property>
+  </action>
+  <action name="actionSub_pixel_level">
+   <property name="text">
+    <string>Sub pixel level</string>
+   </property>
+   <property name="statusTip">
+    <string>100 is usually good</string>
+   </property>
+  </action>
+  <action name="actionEdit_objects_list">
+   <property name="text">
+    <string>Edit objects list</string>
+   </property>
+  </action>
+  <action name="actionViolin">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Violin</string>
+   </property>
+  </action>
+  <action name="actionPos">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>pos(t)</string>
+   </property>
+  </action>
+  <action name="actionSub_frameset">
+   <property name="text">
+    <string>Sub-frameset</string>
+   </property>
+   <property name="statusTip">
+    <string>Select a set to show and analyse</string>
+   </property>
+  </action>
+  <action name="actionAdd_box">
+   <property name="text">
+    <string>Add box</string>
+   </property>
+   <property name="statusTip">
+    <string>Add zone to analyse. Modify it on screen</string>
+   </property>
+  </action>
+  <action name="actionStart_analysis">
+   <property name="text">
+    <string>Start analysis</string>
+   </property>
+  </action>
+  <action name="actionx_shift">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x(t)_shift</string>
+   </property>
+  </action>
+  <action name="actiony_shift">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>y(t)_shift</string>
+   </property>
+  </action>
+  <action name="actionShow_results">
+   <property name="text">
+    <string>Show results</string>
+   </property>
+  </action>
+  <action name="actionExport_results">
+   <property name="text">
+    <string>Export results</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
