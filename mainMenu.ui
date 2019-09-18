@@ -213,10 +213,16 @@
    <property name="statusTip">
     <string>Add zone to analyse. Modify it on screen</string>
    </property>
+   <property name="shortcut">
+    <string>A</string>
+   </property>
   </action>
   <action name="actionStart_analysis">
    <property name="text">
     <string>Start analysis</string>
+   </property>
+   <property name="shortcut">
+    <string>S</string>
    </property>
   </action>
   <action name="actionx_shift">
