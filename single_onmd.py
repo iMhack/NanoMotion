@@ -20,8 +20,8 @@ from threading import Thread, RLock
 verrou = RLock()
 from PyQt5.QtWidgets import (QApplication, QPushButton, QGridLayout, QDialog, QLineEdit,
 
-                             QFileDialog, QWidget, QAction, QProgressBar)
-from PyQt5.QtCore import QObject, pyqtSignal,QThread
+                             QFileDialog, QWidget, QAction, QProgressBar, QListWidgetItem)
+from PyQt5.QtCore import QObject, pyqtSignal, QThread, Qt
 
 from PyQt5.uic import loadUiType
 
@@ -29,12 +29,13 @@ from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar)
 
-from decimal import *
 
 # To maintain the tips on editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
 from mainMenu import (Ui_MainWindow)  # This is used only to have the tips on editing.
 
+from dragRectangle import DraggableRectangle
+from solver import Solver
 
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
@@ -88,8 +89,27 @@ class Main(QMainWindow, Ui_MainWindow):
 
         self.QProgress = None
 
-
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
+
+    def dragEnterEvent(self, e):
+        if e.mimeData().hasUrls:
+            e.accept()
+        else:
+            e.ignore()
+
+    def dragMoveEvent(self, e):
+        if e.mimeData().hasUrls:
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+        print("Drop event")
+        if e.mimeData().hasUrls:
+            for url in e.mimeData().urls():
+                fname = str(url.toLocalFile())
+            self.fileName = fname
+            self.showFile()
 
     def plotSelection(self):
         for action in self.menuView_plot.actions():
@@ -192,21 +212,16 @@ class Main(QMainWindow, Ui_MainWindow):
             y_rect = int(self.boxes_dict[i].y_rect)
             print("\nSelected coordinates for polygon are: ", x_rect, y_rect)
             solver = Solver(videodata=self.videodata, fps=self.fps, res=self.res, w=self.w, h=self.h, x_rect=x_rect,
-                            y_rect=y_rect)
+                            y_rect=y_rect, solver_number = i)
             self.solver_list.append(solver)
             self.solver_list[i].progressChanged.connect(self.updateProgress)
             self.solver_list[i].start()
-        self.waitForSolver()
 
 
-    def waitForSolver(self):
-        self.QProgress = QProgressBar()
-        self.QProgress.setGeometry(0, 0, 300, 25)
-        self.QProgress.show()
-            
+    def updateProgress(self, solver_number, progress):
+        item = self.boxes.item(int(solver_number))
+        item.setText(str(solver_number)+" "+str(progress)+"%")
 
-    def updateProgress(self, progress):
-        self.QProgress.setValue(progress)
 
     def showResults(self):
         print(self.solver_list)
@@ -226,7 +241,6 @@ class Main(QMainWindow, Ui_MainWindow):
                            self.z_rms[i], self.v_rms[i], self.output_name[i])
         print("Files exported")
 
-
 class MyPopup(QWidget):
     def __init__(self):
         QWidget.__init__(self)
@@ -235,185 +249,6 @@ class MyPopup(QWidget):
         dc = QPainter(self)
         dc.drawLine(0, 0, 100, 100)
         dc.drawLine(100, 0, 0, 100)
-
-
-class DraggableRectangle:
-
-    def __init__(self, rect):
-
-        self.rect = rect
-        self.press = None
-        self.x_rect = 0
-        self.y_rect = 0
-        self.rect.figure.canvas.draw()
-
-    def connect(self):
-
-        'connect to all the events we need'
-
-        print("DraggableRectangle connect()")
-
-        self.cidpress = self.rect.figure.canvas.mpl_connect(
-
-            'button_press_event', self.on_press)
-
-        self.cidrelease = self.rect.figure.canvas.mpl_connect(
-
-            'button_release_event', self.on_release)
-
-        self.cidmotion = self.rect.figure.canvas.mpl_connect(
-
-            'motion_notify_event', self.on_motion)
-
-    def on_press(self, event):
-
-        'on button press we will see if the mouse is over us and store some data'
-
-        print("DraggableRectangle on_press()")
-
-        if event.inaxes != self.rect.axes: return
-
-        contains, attrd = self.rect.contains(event)
-
-        if not contains: return
-
-        x0, y0 = self.rect.xy
-
-        self.press = x0, y0, event.xdata, event.ydata
-
-    def on_motion(self, event):
-
-        'on motion we will move the rect if the mouse is over us'
-
-        # print("DraggableRectangle on_motion()")
-
-        if self.press is None: return
-
-        if event.inaxes != self.rect.axes: return
-
-        x0, y0, xpress, ypress = self.press
-
-        dx = event.xdata - xpress
-
-        dy = event.ydata - ypress
-
-        self.rect.set_x(x0 + dx)
-
-        self.rect.set_y(y0 + dy)
-
-        self.rect.figure.canvas.draw()
-
-    def on_release(self, event):
-        self.x_rect, self.y_rect = self.rect.xy
-        self.press = None
-        self.rect.figure.canvas.draw()
-
-    def disconnect(self):
-
-        'disconnect all the stored connection ids'
-
-        self.rect.figure.canvas.mpl_disconnect(self.cidpress)
-
-        self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
-
-        self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
-
-
-class Solver(QThread):
-    progressChanged = pyqtSignal(int)
-    def __init__(self, videodata, fps, res, w, h, x_rect, y_rect):
-        QThread.__init__(self)
-        self.videodata = videodata
-        self.row_min = None
-        self.row_max = None
-        self.col_min = None
-        self.col_max = None
-        self.fps = fps
-        self.res = res
-        self.w = w
-        self.h = h
-        self.x_rect = x_rect
-        self.y_rect = y_rect
-
-        self.z_std = None
-        self.z_rms = None
-        self.v_rms = None
-
-        self.shift_x = []
-        self.shift_y = []
-
-    def run(self):
-        self._crop_coord()
-        self._calcul_phase_corr()
-
-    def _calcul_phase_corr(self):
-        # calculate cross correlation for all frames for the selected  polygon crop
-        with verrou:
-            image_1 = rgb2gray(
-                self.videodata.get_frame(0)[self.row_min:self.row_max, self.col_min:self.col_max])  # Lock
-        frames_n = 20
-        my_upsample_factor = 100
-        for i in range(frames_n):
-            self.progress = int((i / (frames_n - 1))*100)
-            self.progressChanged.emit(self.progress)
-            print(str(self.progress) + "%: analyse frame " + str(i + 1) + "/" + str(frames_n))
-            with verrou:
-                image_2 = rgb2gray(
-                    self.videodata.get_frame(i)[self.row_min:self.row_max, self.col_min:self.col_max])  # Lock
-            # subpixel precision
-            shift, error, diffphase = register_translation(image_1, image_2, my_upsample_factor)
-            self.shift_x.append(shift[1])
-            self.shift_y.append(shift[0])
-
-    def _crop_coord(self):
-        self.row_min = self.y_rect
-
-        self.row_max = self.y_rect + self.h
-
-        self.col_min = self.x_rect
-
-        self.col_max = self.x_rect + self.w
-
-    def get_z_std(self):
-        if self.z_std == None:
-            self.z_std = self._z_std_calcul()
-            return self.z_std
-        else:
-            return self.z_std
-
-    def _z_std_calcul(self):
-        x = [i * self.res for i in self.shift_x]
-        y = [i * self.res for i in self.shift_y]
-        z = np.sqrt((np.std(x)) ** 2 + (np.std(y)) ** 2)
-
-        z_dec = Decimal(str(z))  # special Decimal class for the correct rounding
-
-        return z_dec.quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)  # rounding, leaves 3 digits after comma
-
-    def get_z_delta_rms(self):
-        if self.z_rms is None or self.v_rms is None:
-            self.z_std, self.v_rms = self._z_delta_rms_calcul()
-            return self.z_rms, self.v_rms
-        else:
-            return self.z_rms, self.v_rms
-
-    def _z_delta_rms_calcul(self):  # To modify
-        x = [i * self.res for i in self.shift_x]
-        y = [i * self.res for i in self.shift_y]
-        dx = []
-        dy = []
-        dz = []
-        dv = []
-        for i in range(1, len(x)):
-            dx.append(x[i] - x[i - 1])
-            dy.append(y[i] - y[i - 1])
-            dz.append(np.sqrt(dx[i - 1] ** 2 + dy[i - 1] ** 2))
-        z_tot = np.sum(dz)
-        v = (self.fps / (len(x) - 1)) * z_tot
-        z_tot_dec = Decimal(str(z_tot))  # special Decimal class for the correct rounding
-        v_dec = Decimal(str(v))  # special Decimal class for the correct rounding
-        return z_tot_dec.quantize(Decimal('0.001'), rounding=ROUND_HALF_UP), v_dec.quantize(Decimal('0.001'),
-                                                                                            rounding=ROUND_HALF_UP)  # rounding, leaves 3 digits after comma
 
 
 def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict):
