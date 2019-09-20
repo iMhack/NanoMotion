@@ -1,3 +1,4 @@
+print("Beginning of the code")
 import sys
 import os
 import numpy as np
@@ -15,7 +16,7 @@ import seaborn as sns
 
 import os.path
 
-from threading import Thread, RLock
+from threading import RLock
 
 verrou = RLock()
 from PyQt5.QtWidgets import (QApplication, QPushButton, QGridLayout, QDialog, QLineEdit,
@@ -66,8 +67,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionStart_analysis.triggered.connect(self.startAnalysis)
         self.actionShow_results.triggered.connect(self.showResults)
 
-        self.cid = None
-
         self.fileName = ""
         self.cell_n = ""
         self.polyg_size = 40
@@ -75,16 +74,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.w = None
         self.h = None
 
-        self.shift_x = []
-        self.shift_y = []
-        self.z_std = []
-        self.z_rms = []
-        self.v_rms = []
-
-        self.test = None
         self.cursor = None
-        self.QProgress = None
-
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
 
     def dragEnterEvent(self, e):
@@ -106,6 +96,10 @@ class Main(QMainWindow, Ui_MainWindow):
                 fname = str(url.toLocalFile())
             self.fileName = fname
             self.showFile()
+
+    def mouse_event(self, e):
+        self.cursor = (e.xdata, e.ydata)
+        #print(e)
 
     def plotSelection(self):
         for action in self.menuView_plot.actions():
@@ -159,8 +153,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.changefig(self.views.item(0))
         print(shape)
 
-    def mouse_event(self, event):
-        self.cursor = (event.xdata, event.ydata)
 
     def substract(self):
         if self.stopFrame == None: self.stopFrame = self.orignalVideoLen
@@ -174,11 +166,8 @@ class Main(QMainWindow, Ui_MainWindow):
         print("\naddDraggableRectangle()")
         self.w = self.polyg_size
         self.h = self.polyg_size
-
         x0 = self.cursor[0]-self.w/2
         y0 = self.cursor[1]-self.h/2
-
-        self.test = Figure()
         for x in self.fig_dict:
             print("Adding box to figure")
             ax = self.fig_dict[x].add_subplot(111)
@@ -190,16 +179,9 @@ class Main(QMainWindow, Ui_MainWindow):
             self.boxes.addItem(str(len(self.boxes_dict)))
 
     def startAnalysis(self):
-        self.shift_x.clear()  # So it can be run, modify boxes, rerun.
-        self.shift_y.clear()
         self.output_name.clear()
-        self.z_rms.clear()
-        self.z_std.clear()
-        self.v_rms.clear()
         self.solver_list.clear()
         for i in range(len(self.boxes_dict)):
-            #self.output_name.append(create_dirs(self.fileName, str(i)))
-            #print("\nSelected coordinates for polygon are: ", x_rect, y_rect)
             solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
                             w=self.boxes_dict[i].rect._width,
                             h=self.boxes_dict[i].rect._height, x_rect=int(self.boxes_dict[i].x_rect),
