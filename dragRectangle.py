@@ -4,8 +4,8 @@ class DraggableRectangle:
 
         self.rect = rect
         self.press = None
-        self.x_rect = 0
-        self.y_rect = 0
+        self.x_rect = rect.xy[0]
+        self.y_rect = rect.xy[1]
         self.rect.figure.canvas.draw()
 
     def connect(self):
@@ -30,7 +30,7 @@ class DraggableRectangle:
 
         'on button press we will see if the mouse is over us and store some data'
 
-        print("DraggableRectangle on_press()")
+        #print("DraggableRectangle on_press()")
 
         if event.inaxes != self.rect.axes: return
 

@@ -10,20 +10,25 @@ verrou = RLock()
 class Solver(QThread):
     progressChanged = pyqtSignal(int,int)
 
-    def __init__(self, videodata, fps, res, w, h, x_rect, y_rect, solver_number):
+    def __init__(self, videodata, fps, res, w, h, x_rect, y_rect, solver_number, start_frame, stop_frame,
+                 output_name, my_upsample_factor):
         QThread.__init__(self)
-        self.solver_number = solver_number
-        self.videodata = videodata
+        self.solver_number = solver_number # Stores the ID of the solver
+        self.videodata = videodata # Stores an access to the file to get frames
         self.row_min = None
         self.row_max = None
         self.col_min = None
         self.col_max = None
-        self.fps = fps
-        self.res = res
+        self.fps = fps # Frames per seconds
+        self.res = res # Size of pixel (um / pix)
         self.w = w
         self.h = h
         self.x_rect = x_rect
         self.y_rect = y_rect
+        self.my_upsample_factor = my_upsample_factor
+        self.start_frame = start_frame
+        self.stop_frame = stop_frame
+        self.output_name = output_name
 
         self.z_std = None
         self.z_rms = None
@@ -35,39 +40,42 @@ class Solver(QThread):
     def run(self):
         self._crop_coord()
         self._calcul_phase_corr()
+        self.get_z_delta_rms()
+        self.get_z_std()
 
     def _calcul_phase_corr(self):
         # calculate cross correlation for all frames for the selected  polygon crop
-        import time_logging
-        t = time_logging.start()
+        #import time_logging
+        #t = time_logging.start()
+        print("row min row max col min col max"+ str([self.row_min,self.row_max, self.col_min,self.col_max]))
         with verrou:
             image_1 = rgb2gray(
                 self.videodata.get_frame(0)[self.row_min:self.row_max, self.col_min:self.col_max])  # Lock
-        frames_n = 20
-        my_upsample_factor = 100
-        t = time_logging.end("Load frame", t)
-        for i in range(frames_n):
-            self.progress = int((i / (frames_n - 1)) * 100)
-            self.progressChanged.emit(self.solver_number, self.progress)
-            print(str(self.progress) + "%: analyse frame " + str(i + 1) + "/" + str(frames_n))
+        #t = time_logging.end("Load frame", t)
+        progress_pivot = 0
+        print(image_1.shape)
+        lenght=self.stop_frame - self.start_frame
+        for i in range(self.start_frame, self.stop_frame+1):
+            self.progress = int(((i-self.start_frame) / lenght) * 100)
+            if self.progress>progress_pivot+4:
+                self.progressChanged.emit(self.solver_number, self.progress)
+                print(str(self.progress) + "%: analyse frame " + str(i-self.start_frame) + "/" + str(self.stop_frame-self.start_frame))
+                progress_pivot=self.progress
             with verrou:
                 image_2 = rgb2gray(
                     self.videodata.get_frame(i)[self.row_min:self.row_max, self.col_min:self.col_max])  # Lock
             # subpixel precision
-            t = time_logging.end("Load frame", t)
-            shift, error, diffphase = register_translation(image_1, image_2, my_upsample_factor)
-            t = time_logging.end("Compute register_translation", t)
+            #t = time_logging.end("Load frame", t)
+            shift, error, diffphase = register_translation(image_1, image_2, self.my_upsample_factor)
+            #t = time_logging.end("Compute register_translation", t)
             self.shift_x.append(shift[1])
             self.shift_y.append(shift[0])
-        print(time_logging.text_statistics())
+        #print(time_logging.text_statistics())
 
     def _crop_coord(self):
         self.row_min = self.y_rect
-
         self.row_max = self.y_rect + self.h
-
         self.col_min = self.x_rect
-
         self.col_max = self.x_rect + self.w
 
     def get_z_std(self):
@@ -81,9 +89,7 @@ class Solver(QThread):
         x = [i * self.res for i in self.shift_x]
         y = [i * self.res for i in self.shift_y]
         z = np.sqrt((np.std(x)) ** 2 + (np.std(y)) ** 2)
-
         z_dec = Decimal(str(z))  # special Decimal class for the correct rounding
-
         return z_dec.quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)  # rounding, leaves 3 digits after comma
 
     def get_z_delta_rms(self):

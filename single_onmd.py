@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import (QApplication, QPushButton, QGridLayout, QDialog, QL
 
                              QFileDialog, QWidget, QAction, QProgressBar, QListWidgetItem)
 from PyQt5.QtCore import QObject, pyqtSignal, QThread, Qt
+from PyQt5 import QtGui
 
 from PyQt5.uic import loadUiType
 
@@ -29,13 +30,13 @@ from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar)
 
-
 # To maintain the tips on editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
 from mainMenu import (Ui_MainWindow)  # This is used only to have the tips on editing.
 
 from dragRectangle import DraggableRectangle
 from solver import Solver
+
 
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
@@ -56,7 +57,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionOpen.triggered.connect(self.browse_file)
         self.actionExport_results.triggered.connect(self.export_results)
         self.actionSubstract.triggered.connect(self.substract)
-        self.actionSub_frameset.triggered.connect(self.subframeset)
+        self.actionSubstract.setDisabled(True)
         self.actionAdd_box.triggered.connect(self.addDraggableRectangle)
         self.actionViolin.triggered.connect(self.plotSelection)
         self.actionPos.triggered.connect(self.plotSelection)
@@ -64,20 +65,15 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionx_shift.triggered.connect(self.plotSelection)
         self.actionStart_analysis.triggered.connect(self.startAnalysis)
         self.actionShow_results.triggered.connect(self.showResults)
-        self.popup = None
+
+        self.cid = None
 
         self.fileName = ""
-        self.magnitude = 1
-        self.pixelSize = 1.2
-        self.res = 1.2
         self.cell_n = ""
         self.polyg_size = 40
-        self.fps = 25
         self.videodata = None
         self.w = None
         self.h = None
-        self.startFrame = 0
-        self.stopFrame = None
 
         self.shift_x = []
         self.shift_y = []
@@ -86,7 +82,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.v_rms = []
 
         self.test = None
-
+        self.cursor = None
         self.QProgress = None
 
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
@@ -127,6 +123,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def addmpl(self, fig):  # Add plot to show
         self.canvas = FigureCanvas(fig)
+        self.canvas.mpl_connect('motion_notify_event', self.mouse_event)
         self.mplvl.addWidget(self.canvas)
         self.canvas.draw()
         self.toolbar = NavigationToolbar(self.canvas,
@@ -145,7 +142,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.goodFile = 1
         self.showFile()
 
-    def showFile(self):
+    def showFile(self):  # TODO change name to refer at what this method does
         print("\nshowFile")
         # self.videodata = pims.Video(self.fileName)
         self.videodata = pims.ImageIOReader(self.fileName)
@@ -160,10 +157,10 @@ class Main(QMainWindow, Ui_MainWindow):
         self.orignalVideoLen = self.videodata._len  # Gives the right with some python environnements or get inf
         print("File lenght is " + str(self.orignalVideoLen))
         self.changefig(self.views.item(0))
-
         print(shape)
-        self.w = shape[0]
-        self.h = shape[1]
+
+    def mouse_event(self, event):
+        self.cursor = (event.xdata, event.ydata)
 
     def substract(self):
         if self.stopFrame == None: self.stopFrame = self.orignalVideoLen
@@ -173,24 +170,19 @@ class Main(QMainWindow, Ui_MainWindow):
         sub.imshow(subset, cmap=plt.cm.gray)
         self.addfig('Subtracted video', fig)
 
-    def subframeset(self):  # To be done
-        print("\nsubframeset")
-        self.popup = MyPopup()
-        self.popup.setGeometry(100, 100, 100, 100)
-        self.popup.show()
-
     def addDraggableRectangle(self):
         print("\naddDraggableRectangle()")
-        print("Imported file " + self.fileName)
-        w = self.polyg_size
-        h = self.polyg_size
-        x0 = 15
-        y0 = 15
+        self.w = self.polyg_size
+        self.h = self.polyg_size
+
+        x0 = self.cursor[0]-self.w/2
+        y0 = self.cursor[1]-self.h/2
 
         self.test = Figure()
         for x in self.fig_dict:
+            print("Adding box to figure")
             ax = self.fig_dict[x].add_subplot(111)
-            rect_1 = patches.Rectangle((x0, y0), w, h, linewidth=1, edgecolor='r', facecolor='none')
+            rect_1 = patches.Rectangle(xy=(x0, y0), width=self.w, height=self.h, linewidth=1, edgecolor='r', facecolor='none')
             ax.add_patch(rect_1)
             dr = DraggableRectangle(rect_1)
             dr.connect()
@@ -206,26 +198,30 @@ class Main(QMainWindow, Ui_MainWindow):
         self.v_rms.clear()
         self.solver_list.clear()
         for i in range(len(self.boxes_dict)):
-            self.output_name.append(create_dirs(self.fileName, str(i)))
-            print("\nAnalysing " + self.output_name[i])
-            x_rect = int(self.boxes_dict[i].x_rect)
-            y_rect = int(self.boxes_dict[i].y_rect)
-            print("\nSelected coordinates for polygon are: ", x_rect, y_rect)
-            solver = Solver(videodata=self.videodata, fps=self.fps, res=self.res, w=self.w, h=self.h, x_rect=x_rect,
-                            y_rect=y_rect, solver_number = i)
+            #self.output_name.append(create_dirs(self.fileName, str(i)))
+            #print("\nSelected coordinates for polygon are: ", x_rect, y_rect)
+            solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
+                            w=self.boxes_dict[i].rect._width,
+                            h=self.boxes_dict[i].rect._height, x_rect=int(self.boxes_dict[i].x_rect),
+                            y_rect=int(self.boxes_dict[i].y_rect),
+                            my_upsample_factor=int(self.lineEdit_sub_pix.text()),
+                            stop_frame=int(self.lineEdit_stop_frame.text()),
+                            start_frame=int(self.lineEdit_start_frame.text()),
+                            res=float(self.lineEdit_pix_size.text()),
+                            output_name=create_dirs(self.fileName, str(i)), solver_number=i)
             self.solver_list.append(solver)
             self.solver_list[i].progressChanged.connect(self.updateProgress)
             self.solver_list[i].start()
 
-
     def updateProgress(self, solver_number, progress):
         item = self.boxes.item(int(solver_number))
-        item.setText(str(solver_number)+" "+str(progress)+"%")
-
+        item.setText(str(solver_number) + " " + str(progress) + "%")
 
     def showResults(self):
         print(self.solver_list)
-        for i in range(len(self.boxes_dict)):
+        for solver in self.solver_list:
+            plot_results(solver.shift_x, solver.shift_y, solver.fps, solver.res, solver.output_name, self.plots_dict)
+        '''for i in range(len(self.boxes_dict)):
             self.shift_x.append(self.solver_list[i].shift_x)
             self.shift_y.append(self.solver_list[i].shift_y)
             self.z_std.append(self.solver_list[i].get_z_std())
@@ -233,22 +229,14 @@ class Main(QMainWindow, Ui_MainWindow):
             self.z_rms.append(z_rms)
             self.v_rms.append(v_rms)
             plot_results(self.shift_x[i], self.shift_y[i], self.fps, self.res, self.output_name[i], self.plots_dict)
+        '''
         print("Plots showed")
 
     def export_results(self):
-        for i in range(len(self.boxes_dict)):
-            export_results(self.shift_x[i], self.shift_y[i], self.fps, self.res, self.w, self.h, self.z_std,
-                           self.z_rms[i], self.v_rms[i], self.output_name[i])
+        for solver in self.solver_list:
+            export_results(solver.shift_x, solver.shift_y, solver.fps, solver.res, solver.w, solver.h, solver.z_std,
+                           solver.z_rms, solver.v_rms, solver.output_name)
         print("Files exported")
-
-class MyPopup(QWidget):
-    def __init__(self):
-        QWidget.__init__(self)
-
-    def paintEvent(self, e):
-        dc = QPainter(self)
-        dc.drawLine(0, 0, 100, 100)
-        dc.drawLine(100, 0, 0, 100)
 
 
 def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict):
