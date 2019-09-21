@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
+import matplotlib.text as mpltext
 import pims
 from PyQt5.QtGui import QPainter
 
@@ -71,8 +72,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.cell_n = ""
         self.polyg_size = 40
         self.videodata = None
-        self.w = None
-        self.h = None
 
         self.cursor = None
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
@@ -163,20 +162,23 @@ class Main(QMainWindow, Ui_MainWindow):
         self.addfig('Subtracted video', fig)
 
     def addDraggableRectangle(self):
-        print("\naddDraggableRectangle()")
-        self.w = self.polyg_size
-        self.h = self.polyg_size
-        x0 = self.cursor[0]-self.w/2
-        y0 = self.cursor[1]-self.h/2
+        #print("\naddDraggableRectangle()")
+        w = int(self.lineEdit_w.text())
+        h = int(self.lineEdit_h.text())
+        x0 = self.cursor[0]-w/2
+        y0 = self.cursor[1]-h/2
         for x in self.fig_dict:
-            print("Adding box to figure")
+            length = len(self.boxes_dict)
+            print("Adding box "+str(length)+" to figure")
             ax = self.fig_dict[x].add_subplot(111)
-            rect_1 = patches.Rectangle(xy=(x0, y0), width=self.w, height=self.h, linewidth=1, edgecolor='r', facecolor='none')
-            ax.add_patch(rect_1)
-            dr = DraggableRectangle(rect_1)
+            rect = patches.Rectangle(xy=(x0, y0), width=w, height=h, linewidth=1, edgecolor='r', facecolor='b', fill=False)
+            ax.add_patch(rect)
+            text = ax.text(x=x0, y=y0, s=str(length))
+            #ax.text(x0, y0, str(length))
+            dr = DraggableRectangle(rect, rectangle_number=length, text=text)
             dr.connect()
             self.boxes_dict.append(dr)
-            self.boxes.addItem(str(len(self.boxes_dict)))
+            self.boxes.addItem(str(length))
 
     def startAnalysis(self):
         self.output_name.clear()
