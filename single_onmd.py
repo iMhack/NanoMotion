@@ -234,7 +234,8 @@ def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict):
         plt.savefig(output_name + "_x(t).png")
     if (plots_dict["Violin"]):
         plt.figure(num=output_name + 'violin of shift_x*shift_y')
-        sns.violinplot(data=np.sqrt(np.multiply(np.square(shift_x), np.square(shift_y))))
+        shift_length=np.sqrt(np.square(shift_x)+np.square(shift_y))
+        sns.violinplot(data=shift_length)
         plt.title("violin")
         plt.savefig(output_name + "_violin.png")
 
