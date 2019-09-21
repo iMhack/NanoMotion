@@ -136,21 +136,19 @@ class Main(QMainWindow, Ui_MainWindow):
         self.showFile()
 
     def showFile(self):  # TODO change name to refer at what this method does
-        print("\nshowFile")
+        #print("showFile()")
         # self.videodata = pims.Video(self.fileName)
         self.videodata = pims.ImageIOReader(self.fileName)
         # self.videodata = pims.MoviePyReader(self.fileName)
-        print("\nShape of videodata[1] : ")
-        print(type(self.videodata))
         shape = np.shape(self.videodata.get_frame(0))
+        self.orignalVideoLen = self.videodata._len  # Gives the right with some python environnements or get inf
+        print("Shape of videodata[1] : "+str(shape)+" x "+ str(self.orignalVideoLen)+" frames. Obj type " + str(type(self.videodata)))
+        #print(type(self.videodata))
         fig = Figure()
         sub = fig.add_subplot(111)
         sub.imshow(rgb2gray(self.videodata.get_frame(0)), cmap=plt.cm.gray)
         self.addfig('Raw video', fig)
-        self.orignalVideoLen = self.videodata._len  # Gives the right with some python environnements or get inf
-        print("File lenght is " + str(self.orignalVideoLen))
         self.changefig(self.views.item(0))
-        print(shape)
 
 
     def substract(self): # TODO edit it to work with boundaries we set
