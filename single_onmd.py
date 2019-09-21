@@ -150,7 +150,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.addfig('Raw video', fig)
         self.changefig(self.views.item(0))
 
-
     def substract(self): # TODO edit it to work with boundaries we set
         if self.stopFrame == None: self.stopFrame = self.orignalVideoLen
         fig = Figure()
@@ -198,6 +197,7 @@ class Main(QMainWindow, Ui_MainWindow):
             self.solver_list.append(solver)
             self.solver_list[i].progressChanged.connect(self.updateProgress)
             self.solver_list[i].start()
+        self.fig_dict['Raw video'].savefig(create_dirs(self.fileName, "boxes_selection")+".png")
 
     def updateProgress(self, solver_number, progress):
         item = self.boxes.item(int(solver_number))
@@ -207,15 +207,6 @@ class Main(QMainWindow, Ui_MainWindow):
         print(self.solver_list)
         for solver in self.solver_list:
             plot_results(solver.shift_x, solver.shift_y, solver.fps, solver.res, solver.output_name, self.plots_dict)
-        '''for i in range(len(self.boxes_dict)):
-            self.shift_x.append(self.solver_list[i].shift_x)
-            self.shift_y.append(self.solver_list[i].shift_y)
-            self.z_std.append(self.solver_list[i].get_z_std())
-            z_rms, v_rms = self.solver_list[i].get_z_delta_rms()
-            self.z_rms.append(z_rms)
-            self.v_rms.append(v_rms)
-            plot_results(self.shift_x[i], self.shift_y[i], self.fps, self.res, self.output_name[i], self.plots_dict)
-        '''
         print("Plots showed")
 
     def export_results(self):
@@ -263,43 +254,25 @@ def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict):
 
 def export_results(shift_x, shift_y, fps, res, w, h, z_std, dz_rms, v, output_name):
     df = pd.DataFrame({"t, s": [frame / fps for frame in range(len(shift_x))], "x, px": shift_x, "y, px": shift_y,
-
                        "x, um": [x * res for x in shift_x], "y, um": [y * res for y in shift_y]})
-
-    df = pd.concat([df, pd.DataFrame(
-
-        {"z std, um": [z_std], "total z, um": [dz_rms], "v, um/s": [v], "window, px": [str(w) + " x " + str(h)],
-         "window, um": [str(w * res) + " x " + str(h * res)],
-
-         "um per px": [res]})], axis=1)
-
-    df = df[
-        ["t, s", "x, px", "y, px", "x, um", "y, um", "z std, um", "total z, um", "v, um/s", "window, px", "window, um",
-         "um per px"]]
-
+    df = pd.concat([df, pd.DataFrame({"z std, um": [z_std], "total z, um": [dz_rms], "v, um/s": [v], "window, px":
+        [str(w) + " x " + str(h)], "window, um": [str(w * res) + " x " + str(h * res)],"um per px": [res]})], axis=1)
+    df = df[["t, s", "x, px", "y, px", "x, um", "y, um", "z std, um", "total z, um", "v, um/s", "window, px",
+             "window, um", "um per px"]]
     writer = pd.ExcelWriter(
-
         os.path.join(output_name + "_output.xlsx"))
-
     df.to_excel(excel_writer=writer, sheet_name="Sheet 1", index=False)
-
     writer.save()
 
 
 def create_dirs(file, cell_name):  # check if /results/filename/ directories exists and create them, if not
-
     videofile_dir = os.path.dirname(os.path.abspath(file))
-
     if not os.path.isdir(os.path.join(videofile_dir, "results")):
         os.makedirs(os.path.join(videofile_dir, "results"))
-
     output_dir = os.path.join(videofile_dir, "results", os.path.basename(file)[:-4])
-
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-
     output_name = os.path.join(output_dir, os.path.basename(file)[:-4] + "_cell_" + cell_name)
-
     return output_name
 
 
