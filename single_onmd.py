@@ -153,7 +153,7 @@ class Main(QMainWindow, Ui_MainWindow):
         print(shape)
 
 
-    def substract(self):
+    def substract(self): # TODO edit it to work with boundaries we set
         if self.stopFrame == None: self.stopFrame = self.orignalVideoLen
         fig = Figure()
         sub = fig.add_subplot(111)
@@ -165,8 +165,12 @@ class Main(QMainWindow, Ui_MainWindow):
         #print("\naddDraggableRectangle()")
         w = int(self.lineEdit_w.text())
         h = int(self.lineEdit_h.text())
-        x0 = self.cursor[0]-w/2
-        y0 = self.cursor[1]-h/2
+        if self.cursor[0] is not None and self.cursor[1] is not None:
+            x0 = self.cursor[0] - w / 2
+            y0 = self.cursor[1] - h / 2
+        else:
+            x0 = 15
+            y0 = 15
         for x in self.fig_dict:
             length = len(self.boxes_dict)
             print("Adding box "+str(length)+" to figure")
