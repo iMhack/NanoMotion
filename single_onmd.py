@@ -103,7 +103,7 @@ class Main(QMainWindow, Ui_MainWindow):
     def plotSelection(self):
         for action in self.menuView_plot.actions():
             self.plots_dict[action.text()] = action.isChecked()
-            print("menuView is " + action.text() + " " + str(action.isChecked()))
+            #print("menuView is " + action.text() + " " + str(action.isChecked()))
 
     def changefig(self, item):
         text = item.text()
