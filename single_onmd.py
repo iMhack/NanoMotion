@@ -1,44 +1,31 @@
 print("Beginning of the code")
+from configparser import ConfigParser
 import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
-import matplotlib.text as mpltext
 import pims
-from PyQt5.QtGui import QPainter
-
 from skimage.color import rgb2gray
-from skimage.feature import register_translation
 import pandas as pd
-
 import seaborn as sns
-
 import os.path
-
 from threading import RLock
-
 verrou = RLock()
-from PyQt5.QtWidgets import (QApplication, QPushButton, QGridLayout, QDialog, QLineEdit,
-
-                             QFileDialog, QWidget, QAction, QProgressBar, QListWidgetItem)
-from PyQt5.QtCore import QObject, pyqtSignal, QThread, Qt
-from PyQt5 import QtGui
-
+from PyQt5.QtWidgets import (QApplication, QFileDialog)
 from PyQt5.uic import loadUiType
-
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar)
-
 # To maintain the tips on editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
 from mainMenu import (Ui_MainWindow)  # This is used only to have the tips on editing.
-
 from dragRectangle import DraggableRectangle
 from solver import Solver
 
+config = ConfigParser()
+config.read('settings.ini')
 
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
@@ -67,6 +54,14 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionx_shift.triggered.connect(self.plotSelection)
         self.actionStart_analysis.triggered.connect(self.startAnalysis)
         self.actionShow_results.triggered.connect(self.showResults)
+        self.lineEdit_pix_size.setText(config.get('section_a', 'pix_size'))
+        self.lineEdit_magn.setText(config.get('section_a', 'magn'))
+        self.lineEdit_sub_pix.setText(config.get('section_a', 'sub_pix'))
+        self.lineEdit_fps.setText(config.get('section_a', 'fps'))
+        self.lineEdit_start_frame.setText(config.get('section_a', 'start_frame'))
+        self.lineEdit_stop_frame.setText(config.get('section_a', 'stop_frame'))
+        self.lineEdit_w.setText(config.get('section_a', 'w'))
+        self.lineEdit_h.setText(config.get('section_a', 'h'))
 
         self.fileName = ""
         self.cell_n = ""
@@ -184,6 +179,18 @@ class Main(QMainWindow, Ui_MainWindow):
     def startAnalysis(self):
         self.output_name.clear()
         self.solver_list.clear()
+        config.set('section_a', 'pix_size', self.lineEdit_pix_size.text())
+        config.set('section_a', 'magn', self.lineEdit_magn.text())
+        config.set('section_a', 'sub_pix', self.lineEdit_sub_pix.text())
+        config.set('section_a', 'fps', self.lineEdit_fps.text())
+        config.set('section_a', 'start_frame', self.lineEdit_start_frame.text())
+        config.set('section_a', 'stop_frame', self.lineEdit_stop_frame.text())
+        config.set('section_a', 'w', self.lineEdit_w.text())
+        config.set('section_a', 'h', self.lineEdit_h.text())
+        with open('settings.ini', 'w') as configfile:
+            config.write(configfile)
+        print('Parameters saved')
+
         for i in range(len(self.boxes_dict)):
             solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
                             w=self.boxes_dict[i].rect._width,

@@ -47,7 +47,7 @@ class Solver(QThread):
         # calculate cross correlation for all frames for the selected  polygon crop
         #import time_logging
         #t = time_logging.start()
-        print("row min row max col min col max"+ str([self.row_min,self.row_max, self.col_min,self.col_max]))
+        print("row min row max col min col max" + str([self.row_min,self.row_max, self.col_min,self.col_max]))
         with verrou:
             image_1 = rgb2gray(
                 self.videodata.get_frame(0)[self.row_min:self.row_max, self.col_min:self.col_max])  # Lock
