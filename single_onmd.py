@@ -235,10 +235,11 @@ def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict, solver_num
         plt.savefig(output_name + "_x(t).png")
     if (plots_dict["Violin"]):
         plt.figure(num=output_name + 'violin of shift_x*shift_y')
-        shift_length=np.sqrt(np.square(shift_x)+np.square(shift_y))
-        shift_step=[shift_length[i + 1] - shift_length[i] for i in range(len(shift_length)-1)]
+        shift_x_step=[shift_x[i + 1] - shift_x[i] for i in range(len(shift_x)-1)]
+        shift_y_step=[shift_y[i + 1] - shift_y[i] for i in range(len(shift_y)-1)]
+        shift_length_step=np.sqrt(np.square(shift_x_step)+np.square(shift_y_step))
         plt.ylabel("step length, um")
-        sns.violinplot(data=shift_step)
+        sns.violinplot(data=shift_length_step)
         plt.title("Violin, #"+str(solver_number)+"")
         plt.savefig(output_name + "_violin.png")
 
