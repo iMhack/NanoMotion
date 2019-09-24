@@ -89,7 +89,7 @@ class Main(QMainWindow, Ui_MainWindow):
             for url in e.mimeData().urls():
                 fname = str(url.toLocalFile())
             self.fileName = fname
-            print(self.fileName+" is the filename")
+            #print(self.fileName+" is the filename")
             self.showFile()
 
     def mouse_event(self, e):
@@ -156,7 +156,7 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.stopFrame == None: self.stopFrame = self.orignalVideoLen
         fig = Figure()
         sub = fig.add_subplot(111)
-        subset = rgb2gray(self.videodata[self.stopFrame - 1]) - rgb2gray(self.videodata[self.startFrame])
+        subset = rgb2gray(self.videodata[int(self.lineEdit_stop_frame.text()) - 1]) - rgb2gray(self.videodata[int(self.lineEdit_start_frame.text())])
         sub.imshow(subset, cmap=plt.cm.gray)
         self.addfig('Subtracted video', fig)
 
