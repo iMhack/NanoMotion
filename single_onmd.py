@@ -74,7 +74,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.cursor = None
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
     def startFrame(self):
-        #print("editing finished")
         if self.fileName != "" :
             try:
                 self.test.set_data(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
@@ -150,7 +149,6 @@ class Main(QMainWindow, Ui_MainWindow):
         except:
             self.videodata = pims.ImageSequence(self.fileName)  # So one can drop a set of images
 
-        # self.videodata = pims.MoviePyReader(self.fileName)
         shape = np.shape(self.videodata.get_frame(0))
         try:
             self.orignalVideoLen = self.videodata._len  # Gives the right with some python environnements or get inf
@@ -158,14 +156,12 @@ class Main(QMainWindow, Ui_MainWindow):
             print("Cant get video length")
         print("Shape of videodata[1] : " + str(shape) + " x " + str(self.orignalVideoLen) + " frames. Obj type " + str(
             type(self.videodata)))
-        # print(type(self.videodata))
         fig = Figure()
         sub = fig.add_subplot(111)
         try:
             self.test = sub.imshow(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
         except:
             self.test = sub.imshow(self.videodata.get_frame(0))
-        # self.addfig('Raw video', fig)
         self.basename.append(os.path.basename(self.fileName))
         self.addfig(self.basename[len(self.basename) - 1], fig)
         self.changefig(self.views.item(0))  # TODO change it for multiple images ?
