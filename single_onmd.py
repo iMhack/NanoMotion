@@ -89,6 +89,7 @@ class Main(QMainWindow, Ui_MainWindow):
             for url in e.mimeData().urls():
                 fname = str(url.toLocalFile())
             self.fileName = fname
+            print(self.fileName+" is the filename")
             self.showFile()
 
     def mouse_event(self, e):
@@ -132,11 +133,17 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def showFile(self):  # TODO change name to refer at what this method does
         #print("showFile()")
-        # self.videodata = pims.Video(self.fileName)
-        self.videodata = pims.ImageIOReader(self.fileName)
+        try:
+            self.videodata = pims.Video(self.fileName)
+        except:
+            self.videodata = pims.ImageSequence(self.fileName) # So one can drop a set of images
+
         # self.videodata = pims.MoviePyReader(self.fileName)
         shape = np.shape(self.videodata.get_frame(0))
-        self.orignalVideoLen = self.videodata._len  # Gives the right with some python environnements or get inf
+        try:
+            self.orignalVideoLen = self.videodata._len  # Gives the right with some python environnements or get inf
+        except:
+            print("Cant get video length")
         print("Shape of videodata[1] : "+str(shape)+" x "+ str(self.orignalVideoLen)+" frames. Obj type " + str(type(self.videodata)))
         #print(type(self.videodata))
         fig = Figure()

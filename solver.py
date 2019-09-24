@@ -45,32 +45,33 @@ class Solver(QThread):
 
     def _calcul_phase_corr(self):
         # calculate cross correlation for all frames for the selected  polygon crop
-        #import time_logging
-        #t = time_logging.start()
+        import time_logging
         print("row min row max col min col max" + str([self.row_min,self.row_max, self.col_min,self.col_max]))
         with verrou:
             image_1 = rgb2gray(
                 self.videodata.get_frame(0)[self.row_min:self.row_max, self.col_min:self.col_max])  # Lock
-        #t = time_logging.end("Load frame", t)
         progress_pivot = 0
         print(image_1.shape)
         lenght=self.stop_frame - self.start_frame
+        t = time_logging.start()
+        #t = time_logging.end("Load frame", t)
         for i in range(self.start_frame, self.stop_frame+1):
             self.progress = int(((i-self.start_frame) / lenght) * 100)
             if self.progress>progress_pivot+4:
                 self.progressChanged.emit(self.solver_number, self.progress)
                 print(str(self.progress) + "%: analyse frame " + str(i-self.start_frame) + "/" + str(self.stop_frame-self.start_frame))
                 progress_pivot=self.progress
+                print(time_logging.text_statistics())
             with verrou:
                 image_2 = rgb2gray(
                     self.videodata.get_frame(i)[self.row_min:self.row_max, self.col_min:self.col_max])  # Lock
             # subpixel precision
-            #t = time_logging.end("Load frame", t)
+            t = time_logging.end("Load frame", t)
             shift, error, diffphase = register_translation(image_1, image_2, self.my_upsample_factor)
-            #t = time_logging.end("Compute register_translation", t)
+            t = time_logging.end("Compute register_translation", t)
             self.shift_x.append(shift[1])
             self.shift_y.append(shift[0])
-        #print(time_logging.text_statistics())
+        print(time_logging.text_statistics())
 
     def _crop_coord(self):
         self.row_min = self.y_rect
