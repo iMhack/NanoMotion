@@ -39,6 +39,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.plots_dict = {}  # List of plots to plot
         self.output_name = []
         self.solver_list = []
+        self.basename = []
 
         self.goodFile = 0
         self.orignalVideoLen = None
@@ -149,7 +150,9 @@ class Main(QMainWindow, Ui_MainWindow):
         fig = Figure()
         sub = fig.add_subplot(111)
         sub.imshow(rgb2gray(self.videodata.get_frame(0)), cmap=plt.cm.gray)
-        self.addfig('Raw video', fig)
+        #self.addfig('Raw video', fig)
+        self.basename.append(os.path.basename(self.fileName))
+        self.addfig(self.basename[len(self.basename)-1], fig)
         self.changefig(self.views.item(0))
 
     def substract(self): # TODO edit it to work with boundaries we set
@@ -211,7 +214,7 @@ class Main(QMainWindow, Ui_MainWindow):
             self.solver_list.append(solver)
             self.solver_list[i].progressChanged.connect(self.updateProgress)
             self.solver_list[i].start()
-        self.fig_dict['Raw video'].savefig(create_dirs(self.fileName, "boxes_selection")+".png")
+        self.fig_dict[self.views.selectedItems()[0].text()].savefig(create_dirs(self.fileName, "boxes_selection")+".png")
 
     def updateProgress(self, solver_number, progress):
         item = self.boxes.item(int(solver_number))
