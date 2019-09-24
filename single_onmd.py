@@ -43,8 +43,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.output_name = []
         self.solver_list = []
         self.basename = []
-
-        self.goodFile = 0
         self.orignalVideoLen = None
 
         self.actionOpen.triggered.connect(self.browse_file)
@@ -63,6 +61,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.lineEdit_sub_pix.setText(config.get('section_a', 'sub_pix'))
         self.lineEdit_fps.setText(config.get('section_a', 'fps'))
         self.lineEdit_start_frame.setText(config.get('section_a', 'start_frame'))
+        self.lineEdit_start_frame.editingFinished.connect(self.startFrame)
         self.lineEdit_stop_frame.setText(config.get('section_a', 'stop_frame'))
         self.lineEdit_w.setText(config.get('section_a', 'w'))
         self.lineEdit_h.setText(config.get('section_a', 'h'))
@@ -74,6 +73,15 @@ class Main(QMainWindow, Ui_MainWindow):
 
         self.cursor = None
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
+    def startFrame(self):
+        #print("editing finished")
+        if self.fileName != "" :
+            try:
+                self.test.set_data(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
+                self.fig_dict[self.basename[0]].canvas.draw()
+                self.fig_dict[self.basename[0]].canvas.flush_events()
+            except:
+                print("Tried to change the 1st frame to show. FAILED")
 
     def dragEnterEvent(self, e):
         if e.mimeData().hasUrls:
@@ -153,7 +161,10 @@ class Main(QMainWindow, Ui_MainWindow):
         # print(type(self.videodata))
         fig = Figure()
         sub = fig.add_subplot(111)
-        self.test = sub.imshow(rgb2gray(self.videodata.get_frame(0)))
+        try:
+            self.test = sub.imshow(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
+        except:
+            self.test = sub.imshow(self.videodata.get_frame(0))
         # self.addfig('Raw video', fig)
         self.basename.append(os.path.basename(self.fileName))
         self.addfig(self.basename[len(self.basename) - 1], fig)
@@ -223,11 +234,9 @@ class Main(QMainWindow, Ui_MainWindow):
             item = self.boxes.item(j)
             item.setText(str(j) + " " + str(progress) + "%: f#" + str(frame-int(self.lineEdit_start_frame.text())) + "/"
                          + str(int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
-
         self.test.set_data(image)
         self.fig_dict[self.basename[0]].canvas.draw()
-        self.fig_dict[self.basename[0]].canvas.flush_events()
-
+        #self.fig_dict[self.basename[0]].canvas.flush_events()
 
 
     def showResults(self):
