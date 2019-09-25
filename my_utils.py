@@ -1,3 +1,8 @@
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 
 def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict, solver_number):
     if (plots_dict["x(t)_shift"]):
@@ -58,5 +63,5 @@ def create_dirs(file, cell_name):  # check if /results/filename/ directories exi
     output_dir = os.path.join(videofile_dir, "results", os.path.basename(file)[:-4])
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-    output_name = os.path.join(output_dir, os.path.basename(file)[:-4] + "_cell_" + cell_name)
+    output_name = os.path.join(output_dir, os.path.basename(file)[:-4] + "_cell_")
     return output_name

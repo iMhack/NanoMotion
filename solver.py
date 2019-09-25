@@ -48,11 +48,11 @@ class Solver(QThread):
         for j in range(len(self.box_dict)):
             image_1.append(rgb2gray(
                 frame_1[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]))
-        progress_pivot = 0
         #print(image_1.shape)
         lenght=self.stop_frame - self.start_frame
         #t = time_logging.start()
         #t = time_logging.end("Load frame", t)
+        progress_pivot = 0 - 5
         for i in range(self.start_frame, self.stop_frame+1):
             with verrou:
                 frame_n = self.videodata.get_frame(i)
@@ -64,7 +64,6 @@ class Solver(QThread):
                 #t = time_logging.end("Compute register_translation", t)
                 self.shift_x[j].append(shift[1])
                 self.shift_y[j].append(shift[0])
-
             self.progress = int(((i-self.start_frame) / lenght) * 100)
             #self.progressChanged.emit(self.progress, i, )
             if self.progress>progress_pivot+4:
