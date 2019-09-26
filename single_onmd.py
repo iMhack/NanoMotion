@@ -8,8 +8,6 @@ from matplotlib.figure import Figure
 import matplotlib.patches as patches
 import pims
 from skimage.color import rgb2gray
-import pandas as pd
-import seaborn as sns
 import os.path
 from threading import RLock
 
@@ -29,7 +27,8 @@ from my_utils import create_dirs, export_results, plot_results
 config = ConfigParser()
 config.read('settings.ini')
 
-
+# TODO Be able to analyse a video be sequences of lenght l seconds. Then plot theses sequences side by side on same fig
+# TODO Substract many frames from each other.
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
         super(Main, self).__init__()
@@ -42,7 +41,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.plots_dict = {}  # List of plots to plot
         self.output_name = []
         self.solver_list = []
-        self.basename = []
+        self.basename = None
         self.orignalVideoLen = None
 
         self.actionOpen.triggered.connect(self.browse_file)
@@ -63,6 +62,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.lineEdit_start_frame.setText(config.get('section_a', 'start_frame'))
         self.lineEdit_start_frame.editingFinished.connect(self.startFrame)
         self.lineEdit_stop_frame.setText(config.get('section_a', 'stop_frame'))
+        self.lineEdit_stop_frame.editingFinished.connect(self.stopFrame)
         self.lineEdit_w.setText(config.get('section_a', 'w'))
         self.lineEdit_h.setText(config.get('section_a', 'h'))
 
@@ -77,10 +77,14 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.fileName != "" :
             try:
                 self.test.set_data(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
-                self.fig_dict[self.basename[0]].canvas.draw()
-                self.fig_dict[self.basename[0]].canvas.flush_events()
+                self.fig_dict[self.basename].canvas.draw()
+                self.fig_dict[self.basename].canvas.flush_events()
             except:
                 print("Tried to change the 1st frame to show. FAILED")
+
+    def stopFrame(self):
+        if int(self.lineEdit_stop_frame.text())>=self.orignalVideoLen:
+            self.lineEdit_stop_frame.setText(str(self.orignalVideoLen-1))
 
     def dragEnterEvent(self, e):
         if e.mimeData().hasUrls:
@@ -101,7 +105,7 @@ class Main(QMainWindow, Ui_MainWindow):
                 fname = str(url.toLocalFile())
             self.fileName = fname
             # print(self.fileName+" is the filename")
-            self.showFile()
+            self.loadAndShowFile()
 
     def mouse_event(self, e):
         self.cursor = (e.xdata, e.ydata)
@@ -140,10 +144,17 @@ class Main(QMainWindow, Ui_MainWindow):
         self.fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                        "All Files (*);;mp4 movie (*.mp4)")
         self.goodFile = 1
-        self.showFile()
+        self.loadAndShowFile()
 
-    def showFile(self):  # TODO change name to refer at what this method does
+    def loadAndShowFile(self):  # TODO change name to refer at what this method does
         # print("showFile()")
+        self.views.clear()
+        self.boxes.clear()
+        self.fig_dict.clear()
+        for box in self.boxes_dict:
+            box.disconnect()
+        self.boxes_dict.clear()
+        self.basename = None
         try:
             self.videodata = pims.Video(self.fileName)
         except:
@@ -162,9 +173,10 @@ class Main(QMainWindow, Ui_MainWindow):
             self.test = sub.imshow(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
         except:
             self.test = sub.imshow(self.videodata.get_frame(0))
-        self.basename.append(os.path.basename(self.fileName))
-        self.addfig(self.basename[len(self.basename) - 1], fig)
-        self.changefig(self.views.item(0))  # TODO change it for multiple images ?
+        self.basename=os.path.basename(self.fileName)
+        self.addfig(self.basename, fig)
+        self.changefig(self.views.item(0))
+        self.stopFrame()  #Check new boundary
 
     def substract(self):  # TODO edit it to work with boundaries we set
         if self.stopFrame == None: self.stopFrame = self.orignalVideoLen
@@ -185,15 +197,14 @@ class Main(QMainWindow, Ui_MainWindow):
         else:
             x0 = 15
             y0 = 15
-        for x in self.fig_dict:
-            length = len(self.boxes_dict)
-            print("Adding box " + str(length) + " to figure")
-            ax = self.fig_dict[x].add_subplot(111)
+        length = len(self.boxes_dict)
+        print("Adding box " + str(length) + " to figure")
+        for f in self.fig_dict:
+            ax = self.fig_dict[f].add_subplot(111)
             rect = patches.Rectangle(xy=(x0, y0), width=w, height=h, linewidth=1, edgecolor='r', facecolor='b',
                                      fill=False)
             ax.add_patch(rect)
             text = ax.text(x=x0, y=y0, s=str(length))
-            # ax.text(x0, y0, str(length))
             dr = DraggableRectangle(rect, rectangle_number=length, text=text)
             dr.connect()
             self.boxes_dict.append(dr)
@@ -223,7 +234,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.solver_list.append(solver)
         self.solver_list[0].progressChanged.connect(self.updateProgress)
         self.solver_list[0].start()
-        self.fig_dict[self.views.selectedItems()[0].text()].savefig(self.output_name + "boxes_selection.png")
+        self.fig_dict[self.basename].savefig(self.output_name + "boxes_selection.png")
 
     def updateProgress(self, progress, frame, image):
         for j in range(len(self.boxes_dict)):
@@ -231,7 +242,7 @@ class Main(QMainWindow, Ui_MainWindow):
             item.setText(str(j) + " " + str(progress) + "%: f#" + str(frame-int(self.lineEdit_start_frame.text())) + "/"
                          + str(int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
         self.test.set_data(image)
-        self.fig_dict[self.basename[0]].canvas.draw()
+        self.fig_dict[self.basename].canvas.draw()
         #self.fig_dict[self.basename[0]].canvas.flush_events()
 
     def showResults(self):

@@ -24,6 +24,8 @@ class Solver(QThread):
         self.start_frame = start_frame
         self.stop_frame = stop_frame
         self.box_dict = box_dict
+        print("box_dict in solver")
+        print(box_dict)
 
         self.z_std = []
         self.z_rms = []
