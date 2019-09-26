@@ -47,7 +47,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionOpen.triggered.connect(self.browse_file)
         self.actionExport_results.triggered.connect(self.export_results)
         self.actionSubstract.triggered.connect(self.substract)
-        self.actionSubstract.setDisabled(True)
+        #self.actionSubstract.setDisabled(True)
         self.actionAdd_box.triggered.connect(self.addDraggableRectangle)
         self.actionViolin.triggered.connect(self.plotSelection)
         self.actionPos.triggered.connect(self.plotSelection)
@@ -74,6 +74,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.cursor = None
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
     def startFrame(self):
+        if int(self.lineEdit_start_frame.text())>=self.orignalVideoLen:
+            self.lineEdit_start_frame.setText(str(self.orignalVideoLen-1))
         if self.fileName != "" :
             try:
                 self.test.set_data(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
@@ -179,13 +181,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.stopFrame()  #Check new boundary
 
     def substract(self):  # TODO edit it to work with boundaries we set
-        if self.stopFrame == None: self.stopFrame = self.orignalVideoLen
-        fig = Figure()
-        sub = fig.add_subplot(111)
-        subset = rgb2gray(self.videodata[int(self.lineEdit_stop_frame.text()) - 1]) - rgb2gray(
-            self.videodata[int(self.lineEdit_start_frame.text())])
-        sub.imshow(subset, cmap=plt.cm.gray)
-        self.addfig('Subtracted video', fig)
+        print("substract")
+        #self.views.addItem("Substracted")
 
     def addDraggableRectangle(self):
         # print("\naddDraggableRectangle()")
