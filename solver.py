@@ -31,8 +31,8 @@ class Solver(QThread):
         self.z_rms = []
         self.v_rms = []
 
-        self.shift_x = [[] for i in range(len(self.box_dict))]
-        self.shift_y = [[] for i in range(len(self.box_dict))]
+        self.shift_x = [[] for _ in self.box_dict]
+        self.shift_y = [[] for _ in self.box_dict]
 
     def run(self):
         self._crop_coord()

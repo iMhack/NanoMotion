@@ -29,6 +29,8 @@ config.read('settings.ini')
 
 # TODO Be able to analyse a video be sequences of lenght l seconds. Then plot theses sequences side by side on same fig
 # TODO Substract many frames from each other.
+# TODO Fix sale at wich it is plotted
+# TODO One plot with the sum.
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
         super(Main, self).__init__()
