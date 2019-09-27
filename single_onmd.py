@@ -29,22 +29,20 @@ config.read('settings.ini')
 
 # TODO Be able to analyse a video be sequences of lenght l seconds. Then plot theses sequences side by side on same fig
 # TODO Substract many frames from each other.
-# TODO Fix sale at wich it is plotted
+# TODO Fix scale at wich it is plotted
 # TODO One plot with the sum.
+# TODO add a stop analysis button
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
         super(Main, self).__init__()
         self.setupUi(self)
-        self.fig_dict = {}  # List of figures
-        self.views.itemClicked.connect(self.changefig)
-        fig = Figure()
-        self.addmpl(fig)
+        self.figure = None
         self.boxes_dict = []  # List of boxes to analyse
         self.plots_dict = {}  # List of plots to plot
         self.output_name = []
         self.solver_list = []
         self.basename = None
-        self.orignalVideoLen = None
+        self.orignalVideoLen = 0
 
         self.actionOpen.triggered.connect(self.browse_file)
         self.actionExport_results.triggered.connect(self.export_results)
@@ -55,6 +53,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionPos.triggered.connect(self.plotSelection)
         self.actiony_shift.triggered.connect(self.plotSelection)
         self.actionx_shift.triggered.connect(self.plotSelection)
+        self.actionViolin_all_on_one.triggered.connect(self.plotSelection)
         self.actionStart_analysis.triggered.connect(self.startAnalysis)
         self.actionShow_results.triggered.connect(self.showResults)
         self.lineEdit_pix_size.setText(config.get('section_a', 'pix_size'))
@@ -67,6 +66,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.lineEdit_stop_frame.editingFinished.connect(self.stopFrame)
         self.lineEdit_w.setText(config.get('section_a', 'w'))
         self.lineEdit_h.setText(config.get('section_a', 'h'))
+        self.checkBox_substract.stateChanged.connect(self.substract)
 
         self.fileName = ""
         self.cell_n = ""
@@ -75,20 +75,29 @@ class Main(QMainWindow, Ui_MainWindow):
 
         self.cursor = None
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
-    def startFrame(self):
+    def startFrame(self, update=True):
         if int(self.lineEdit_start_frame.text())>=self.orignalVideoLen:
             self.lineEdit_start_frame.setText(str(self.orignalVideoLen-1))
         if self.fileName != "" :
             try:
-                self.test.set_data(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
-                self.fig_dict[self.basename].canvas.draw()
-                self.fig_dict[self.basename].canvas.flush_events()
+                if update:
+                    self.imshow.set_data(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
+                    self.figure.canvas.draw()
+                    self.figure.canvas.flush_events()
+                return self.videodata.get_frame(int(self.lineEdit_start_frame.text()))
             except:
                 print("Tried to change the 1st frame to show. FAILED")
+                return 0
 
     def stopFrame(self):
         if int(self.lineEdit_stop_frame.text())>=self.orignalVideoLen:
             self.lineEdit_stop_frame.setText(str(self.orignalVideoLen-1))
+        if self.fileName != "" :
+            try:
+                return self.videodata.get_frame(int(self.lineEdit_stop_frame.text()))
+            except:
+                print("Tried to load the last frame. FAILED")
+                return 0
 
     def dragEnterEvent(self, e):
         if e.mimeData().hasUrls:
@@ -118,31 +127,8 @@ class Main(QMainWindow, Ui_MainWindow):
     def plotSelection(self):
         for action in self.menuView_plot.actions():
             self.plots_dict[action.text()] = action.isChecked()
-            # print("menuView is " + action.text() + " " + str(action.isChecked()))
+            print("menuView is " + action.text() + " " + str(action.isChecked()))
 
-    def changefig(self, item):
-        text = item.text()
-        self.rmmpl()  # Remove plot to show
-        self.addmpl(self.fig_dict[text])  # Add plot to show
-
-    def addfig(self, name, fig):  # Add fig item in the list
-        self.fig_dict[name] = fig
-        self.views.addItem(name)
-
-    def addmpl(self, fig):  # Add plot to show
-        self.canvas = FigureCanvas(fig)
-        self.canvas.mpl_connect('motion_notify_event', self.mouse_event)
-        self.mplvl.addWidget(self.canvas)
-        self.canvas.draw()
-        self.toolbar = NavigationToolbar(self.canvas,
-                                         self, coordinates=True)
-        self.addToolBar(self.toolbar)
-
-    def rmmpl(self, ):  # Remove plot to show
-        self.mplvl.removeWidget(self.canvas)
-        self.canvas.close()
-        self.mplvl.removeWidget(self.toolbar)
-        self.toolbar.close()
 
     def browse_file(self):
         self.fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
@@ -154,7 +140,6 @@ class Main(QMainWindow, Ui_MainWindow):
         # print("showFile()")
         self.views.clear()
         self.boxes.clear()
-        self.fig_dict.clear()
         for box in self.boxes_dict:
             box.disconnect()
         self.boxes_dict.clear()
@@ -171,19 +156,45 @@ class Main(QMainWindow, Ui_MainWindow):
             print("Cant get video length")
         print("Shape of videodata[1] : " + str(shape) + " x " + str(self.orignalVideoLen) + " frames. Obj type " + str(
             type(self.videodata)))
-        fig = Figure()
-        sub = fig.add_subplot(111)
+        self.figure = Figure()
+        sub = self.figure.add_subplot(111)
         try:
-            self.test = sub.imshow(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
+            self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))), cmap='gray')
         except:
-            self.test = sub.imshow(self.videodata.get_frame(0))
+            self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(0)))
         self.basename=os.path.basename(self.fileName)
-        self.addfig(self.basename, fig)
-        self.changefig(self.views.item(0))
+        self.views.addItem(self.basename)
+        self.canvas = FigureCanvas(self.figure)
+        self.canvas.mpl_connect('motion_notify_event', self.mouse_event)
+        self.mplvl.addWidget(self.canvas)
+        self.canvas.draw()
+        self.toolbar = NavigationToolbar(self.canvas, self, coordinates=True)
+        self.addToolBar(self.toolbar)
         self.stopFrame()  #Check new boundary
 
     def substract(self):  # TODO edit it to work with boundaries we set
-        print("substract")
+        if self.checkBox_substract.isChecked():
+            print("substract")
+            try:
+                start_frame=int(self.lineEdit_start_frame.text())
+                stop_frame=int(self.lineEdit_stop_frame.text())
+                n_frames=stop_frame-start_frame
+                first_frame = rgb2gray(self.videodata.get_frame(start_frame))
+                print(type(first_frame))
+                cumulative_frame=np.zeros(np.shape(first_frame))
+                print(type(cumulative_frame))
+                for i in range(stop_frame, start_frame, -int(n_frames/int(self.lineEdit_substract.text()))):
+                    print(i)
+                    cumulative_frame += rgb2gray(self.videodata.get_frame(i))-first_frame
+
+                self.imshow.set_data(rgb2gray(cumulative_frame))
+                self.figure.canvas.draw()
+            except:
+               print("Wasn't able to substract")
+
+        else:
+            print("un-substract")
+            self.startFrame()
         #self.views.addItem("Substracted")
 
     def addDraggableRectangle(self):
@@ -198,16 +209,16 @@ class Main(QMainWindow, Ui_MainWindow):
             y0 = 15
         length = len(self.boxes_dict)
         print("Adding box " + str(length) + " to figure")
-        for f in self.fig_dict:
-            ax = self.fig_dict[f].add_subplot(111)
-            rect = patches.Rectangle(xy=(x0, y0), width=w, height=h, linewidth=1, edgecolor='r', facecolor='b',
-                                     fill=False)
-            ax.add_patch(rect)
-            text = ax.text(x=x0, y=y0, s=str(length))
-            dr = DraggableRectangle(rect, rectangle_number=length, text=text)
-            dr.connect()
-            self.boxes_dict.append(dr)
-            self.boxes.addItem(str(length))
+
+        ax = self.figure.add_subplot(111)
+        rect = patches.Rectangle(xy=(x0, y0), width=w, height=h, linewidth=1, edgecolor='r', facecolor='b',
+                                 fill=False)
+        ax.add_patch(rect)
+        text = ax.text(x=x0, y=y0, s=str(length))
+        dr = DraggableRectangle(rect, rectangle_number=length, text=text)
+        dr.connect()
+        self.boxes_dict.append(dr)
+        self.boxes.addItem(str(length))
 
     def startAnalysis(self):
         self.solver_list.clear()
@@ -233,23 +244,21 @@ class Main(QMainWindow, Ui_MainWindow):
         self.solver_list.append(solver)
         self.solver_list[0].progressChanged.connect(self.updateProgress)
         self.solver_list[0].start()
-        self.fig_dict[self.basename].savefig(self.output_name + "boxes_selection.png")
+        self.figure.savefig(self.output_name + "boxes_selection.png")
 
     def updateProgress(self, progress, frame, image):
         for j in range(len(self.boxes_dict)):
             item = self.boxes.item(j)
             item.setText(str(j) + " " + str(progress) + "%: f#" + str(frame-int(self.lineEdit_start_frame.text())) + "/"
                          + str(int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
-        self.test.set_data(image)
-        self.fig_dict[self.basename].canvas.draw()
-        #self.fig_dict[self.basename[0]].canvas.flush_events()
+        #self.imshow.set_data(rgb2gray(image))
+        #self.figure.canvas.draw()
 
     def showResults(self):
         # print(self.solver_list)
         for solver in self.solver_list:
-            for j in range(len(solver.box_dict)):
-                plot_results(shift_x=solver.shift_x[j], shift_y=solver.shift_y[j], fps=solver.fps, res=solver.res,
-                             output_name=(self.output_name + str(j)), plots_dict=self.plots_dict, solver_number=j)
+            plot_results(shift_x=solver.shift_x, shift_y=solver.shift_y, fps=solver.fps, res=solver.res,
+                         output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict)
         print("Plots showed")
 
     def export_results(self):

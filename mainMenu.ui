@@ -46,7 +46,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>100</width>
+            <width>170</width>
             <height>16777215</height>
            </size>
           </property>
@@ -65,7 +65,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>100</width>
+            <width>50</width>
             <height>16777215</height>
            </size>
           </property>
@@ -79,6 +79,18 @@
         </item>
         <item row="2" column="0">
          <widget class="QLabel" name="label_magn">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>170</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="text">
            <string>Magnification</string>
           </property>
@@ -94,7 +106,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>100</width>
+            <width>50</width>
             <height>16777215</height>
            </size>
           </property>
@@ -108,6 +120,18 @@
         </item>
         <item row="3" column="0">
          <widget class="QLabel" name="label_sub_pix">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>170</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="text">
            <string>Sib-pix lvl</string>
           </property>
@@ -123,7 +147,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>100</width>
+            <width>50</width>
             <height>16777215</height>
            </size>
           </property>
@@ -140,6 +164,18 @@
         </item>
         <item row="4" column="0">
          <widget class="QLabel" name="label_fps">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>170</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="text">
            <string>fps</string>
           </property>
@@ -155,7 +191,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>100</width>
+            <width>50</width>
             <height>16777215</height>
            </size>
           </property>
@@ -166,6 +202,18 @@
         </item>
         <item row="5" column="0">
          <widget class="QLabel" name="label_start_frame">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>170</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="text">
            <string>Start frame</string>
           </property>
@@ -181,7 +229,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>100</width>
+            <width>50</width>
             <height>16777215</height>
            </size>
           </property>
@@ -192,6 +240,18 @@
         </item>
         <item row="6" column="0">
          <widget class="QLabel" name="label_stop_frame">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>170</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="text">
            <string>Stop frame</string>
           </property>
@@ -207,7 +267,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>100</width>
+            <width>50</width>
             <height>16777215</height>
            </size>
           </property>
@@ -218,6 +278,18 @@
         </item>
         <item row="7" column="0">
          <widget class="QLabel" name="label_w">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>170</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="text">
            <string>Box width</string>
           </property>
@@ -233,7 +305,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>100</width>
+            <width>50</width>
             <height>16777215</height>
            </size>
           </property>
@@ -244,6 +316,18 @@
         </item>
         <item row="8" column="0">
          <widget class="QLabel" name="label_h">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>170</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="text">
            <string>Box height</string>
           </property>
@@ -259,12 +343,56 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>100</width>
+            <width>50</width>
             <height>16777215</height>
            </size>
           </property>
           <property name="text">
            <string>40</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="0">
+         <widget class="QCheckBox" name="checkBox_substract">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>170</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>Substract, nframes</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="1">
+         <widget class="QLineEdit" name="lineEdit_substract">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>How many times in range to do this ?</string>
+          </property>
+          <property name="text">
+           <string>5</string>
           </property>
          </widget>
         </item>
@@ -331,6 +459,7 @@
       <string>View plot</string>
      </property>
      <addaction name="actionViolin"/>
+     <addaction name="actionViolin_all_on_one"/>
      <addaction name="actionPos"/>
      <addaction name="actionx_shift"/>
      <addaction name="actiony_shift"/>
@@ -419,7 +548,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Violin</string>
+    <string>Violin_step_length</string>
    </property>
   </action>
   <action name="actionPos">
@@ -481,6 +610,17 @@
   <action name="actionExport_results">
    <property name="text">
     <string>Export results</string>
+   </property>
+  </action>
+  <action name="actionViolin_all_on_one">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Violin_all_on_one</string>
    </property>
   </action>
  </widget>
