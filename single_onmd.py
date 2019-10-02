@@ -67,6 +67,14 @@ class Main(QMainWindow, Ui_MainWindow):
         self.lineEdit_w.setText(config.get('section_a', 'w'))
         self.lineEdit_h.setText(config.get('section_a', 'h'))
         self.checkBox_substract.stateChanged.connect(self.substract)
+        self.lineEdit_substract_lvl.editingFinished.connect(self.substract)
+        for i in plt.colormaps():
+            self.comboBox_substract_col.addItem(i)
+        self.comboBox_substract_col.setCurrentText(config.get('section_b', 'substract_col'))
+        self.lineEdit_substract_lvl.setText(config.get('section_b', 'substract_lvl'))
+        self.comboBox_substract_col.currentIndexChanged.connect(self.substract)
+
+
 
         self.fileName = ""
         self.cell_n = ""
@@ -136,14 +144,25 @@ class Main(QMainWindow, Ui_MainWindow):
         self.goodFile = 1
         self.loadAndShowFile()
 
-    def loadAndShowFile(self):  # TODO change name to refer at what this method does
-        # print("showFile()")
+    def removeFile(self):
         self.views.clear()
         self.boxes.clear()
         for box in self.boxes_dict:
             box.disconnect()
         self.boxes_dict.clear()
         self.basename = None
+        self.mplvl.removeWidget(self.canvas)
+        self.canvas.close()
+        self.mplvl.removeWidget(self.toolbar)
+        self.toolbar.close()
+
+    def loadAndShowFile(self):  # TODO change name to refer at what this method does
+        # print("showFile()")
+        try:
+            self.removeFile()
+        except:
+            print("Nothing to clear")
+
         try:
             self.videodata = pims.Video(self.fileName)
         except:
@@ -154,14 +173,14 @@ class Main(QMainWindow, Ui_MainWindow):
             self.orignalVideoLen = self.videodata._len  # Gives the right with some python environnements or get inf
         except:
             print("Cant get video length")
-        print("Shape of videodata[1] : " + str(shape) + " x " + str(self.orignalVideoLen) + " frames. Obj type " + str(
+        print("Shape of videodata[0] : " + str(shape) + " x " + str(self.orignalVideoLen) + " frames. Obj type " + str(
             type(self.videodata)))
         self.figure = Figure()
         sub = self.figure.add_subplot(111)
         try:
             self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))), cmap='gray')
         except:
-            self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(0)))
+            self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(0)), cmap='gray')
         self.basename=os.path.basename(self.fileName)
         self.views.addItem(self.basename)
         self.canvas = FigureCanvas(self.figure)
@@ -183,19 +202,26 @@ class Main(QMainWindow, Ui_MainWindow):
                 print(type(first_frame))
                 cumulative_frame=np.zeros(np.shape(first_frame))
                 print(type(cumulative_frame))
-                for i in range(stop_frame, start_frame, -int(n_frames/int(self.lineEdit_substract.text()))):
+                for i in range(stop_frame, start_frame, -int(n_frames/int(self.lineEdit_substract_lvl.text()))):
                     print(i)
                     cumulative_frame += rgb2gray(self.videodata.get_frame(i))-first_frame
 
                 self.imshow.set_data(rgb2gray(cumulative_frame))
+                print("upto set_cmap")
+                self.imshow.set_cmap(self.comboBox_substract_col.currentText())
                 self.figure.canvas.draw()
             except:
                print("Wasn't able to substract")
 
         else:
-            print("un-substract")
-            self.startFrame()
-        #self.views.addItem("Substracted")
+            try:
+                print("un-substract")
+                self.startFrame()
+                self.imshow.set_cmap('gray')
+                self.figure.canvas.draw()
+            except:
+                print("Unable to un-substract")
+
 
     def addDraggableRectangle(self):
         # print("\naddDraggableRectangle()")
@@ -230,6 +256,8 @@ class Main(QMainWindow, Ui_MainWindow):
         config.set('section_a', 'stop_frame', self.lineEdit_stop_frame.text())
         config.set('section_a', 'w', self.lineEdit_w.text())
         config.set('section_a', 'h', self.lineEdit_h.text())
+        config.set('section_b', 'substract_col', self.comboBox_substract_col.currentText())
+        config.set('section_b', 'substract_lvl', self.lineEdit_substract_lvl.text())
         with open('settings.ini', 'w') as configfile:
             config.write(configfile)
         print('Parameters saved')

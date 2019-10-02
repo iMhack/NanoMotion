@@ -15,6 +15,8 @@ def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict, boxes_dict
         output_name=output_name + str(j)
         plots_dict=plots_dict
         solver_number=j
+        shift_x_step = [my_shift_x[i + 1] - my_shift_x[i] for i in range(len(my_shift_x) - 1)]
+        shift_y_step = [my_shift_y[i + 1] - my_shift_y[i] for i in range(len(my_shift_y) - 1)]
         if (plots_dict["x(t)_shift"]):
             plt.figure(num=output_name + 'x(t), um(s)')
             plt.plot([frame / fps for frame in range(len(my_shift_x))], [x * res for x in my_shift_x], "-")
@@ -25,8 +27,6 @@ def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict, boxes_dict
             plt.savefig(output_name + "_x(t).png")
         if (plots_dict["Violin_step_length"]):
             plt.figure(num=output_name + 'violin of shift_x*shift_y')
-            shift_x_step = [my_shift_x[i + 1] - my_shift_x[i] for i in range(len(my_shift_x) - 1)]
-            shift_y_step = [my_shift_y[i + 1] - my_shift_y[i] for i in range(len(my_shift_y) - 1)]
             shift_length_step = np.sqrt(np.square(shift_x_step) + np.square(shift_y_step))
             plt.ylabel("step length, um")
             sns.violinplot(data=shift_length_step)
@@ -39,7 +39,7 @@ def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict, boxes_dict
 
         if (plots_dict["y(t)_shift"]):
             plt.figure(num=output_name + 'y(t), um(s)')
-            plt.plot([frame / fps for frame in range(len(shift_y))], [x * res for x in shift_y], "-")
+            plt.plot([frame / fps for frame in range(len(my_shift_y))], [x * res for x in my_shift_y], "-")
             plt.grid()
             plt.title("y(t), #" + str(solver_number) + "")
             plt.xlabel("t, s")
@@ -48,7 +48,7 @@ def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict, boxes_dict
 
         if (plots_dict["pos(t)"]):
             plt.figure(num=output_name + 'y(x), um(um)')
-            plt.plot([x * res for x in my_shift_x], [y * res for y in shift_y], "-")
+            plt.plot([x * res for x in my_shift_x], [y * res for y in my_shift_y], "-")
             plt.grid()
             plt.title("y(x), #" + str(solver_number) + "")
             plt.xlabel("x, um")
@@ -57,6 +57,15 @@ def plot_results(shift_x, shift_y, fps, res, output_name, plots_dict, boxes_dict
 
     if (plots_dict["Violin_all_on_one"]):
         plt.figure(num=output_name + 'Violins')
+        plt.ylabel("step length, um")
+        plt.xlabel("Zone #")
+        sns.violinplot(data=shift_lenght_all)
+        plt.title("Violin, #0 to #" + str(solver_number) + " ")
+        plt.savefig(output_name + "_violin_all.png")
+
+    #if(plots_dict["Violin by n seconds"]):
+    if(False):
+        plt.figure(num=output_name + 'Violins time split')
         plt.ylabel("step length, um")
         plt.xlabel("Zone #")
         sns.violinplot(data=shift_lenght_all)

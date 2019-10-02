@@ -375,7 +375,7 @@
          </widget>
         </item>
         <item row="9" column="1">
-         <widget class="QLineEdit" name="lineEdit_substract">
+         <widget class="QLineEdit" name="lineEdit_substract_lvl">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -393,6 +393,29 @@
           </property>
           <property name="text">
            <string>5</string>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Substract color scale</string>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="1">
+         <widget class="QComboBox" name="comboBox_substract_col">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>70</width>
+            <height>16777215</height>
+           </size>
           </property>
          </widget>
         </item>
