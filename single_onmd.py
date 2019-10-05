@@ -290,7 +290,7 @@ class Main(QMainWindow, Ui_MainWindow):
         for solver in self.solver_list:
             plot_results(shift_x=solver.shift_x, shift_y=solver.shift_y, fps=solver.fps, res=solver.res,
                          output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
-                         chop=self.checkBox_chop.isChecked(), chop_sec=int(self.lineEdit_chop_sec.text()))
+                         chop=self.checkBox_chop.isChecked(), chop_sec=float(self.lineEdit_chop_sec.text()))
         print("Plots showed")
 
     def export_results(self):
