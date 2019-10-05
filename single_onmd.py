@@ -73,6 +73,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.comboBox_substract_col.setCurrentText(config.get('section_b', 'substract_col'))
         self.lineEdit_substract_lvl.setText(config.get('section_b', 'substract_lvl'))
         self.comboBox_substract_col.currentIndexChanged.connect(self.substract)
+        self.lineEdit_chop_sec.setText(config.get('section_b', 'chop_sec'))
 
 
 
@@ -83,6 +84,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
         self.cursor = None
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
+
     def startFrame(self, update=True):
         if int(self.lineEdit_start_frame.text())>=self.orignalVideoLen:
             self.lineEdit_start_frame.setText(str(self.orignalVideoLen-1))
@@ -258,6 +260,7 @@ class Main(QMainWindow, Ui_MainWindow):
         config.set('section_a', 'h', self.lineEdit_h.text())
         config.set('section_b', 'substract_col', self.comboBox_substract_col.currentText())
         config.set('section_b', 'substract_lvl', self.lineEdit_substract_lvl.text())
+        config.set('section_b', 'chop_sec', self.lineEdit_chop_sec.text())
         with open('settings.ini', 'w') as configfile:
             config.write(configfile)
         print('Parameters saved')
@@ -286,7 +289,8 @@ class Main(QMainWindow, Ui_MainWindow):
         # print(self.solver_list)
         for solver in self.solver_list:
             plot_results(shift_x=solver.shift_x, shift_y=solver.shift_y, fps=solver.fps, res=solver.res,
-                         output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict)
+                         output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
+                         chop=self.checkBox_chop.isChecked(), chop_sec=int(self.lineEdit_chop_sec.text()))
         print("Plots showed")
 
     def export_results(self):
