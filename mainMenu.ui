@@ -552,25 +552,9 @@
     </widget>
     <addaction name="actionSubstract"/>
     <addaction name="menuView_plot"/>
-    <addaction name="actionSub_frameset"/>
-   </widget>
-   <widget class="QMenu" name="menuAnalyse_settings">
-    <property name="title">
-     <string>Analyse settings</string>
-    </property>
-    <addaction name="actionAdd_box"/>
-   </widget>
-   <widget class="QMenu" name="menuSTART">
-    <property name="title">
-     <string>START</string>
-    </property>
-    <addaction name="actionStart_analysis"/>
-    <addaction name="actionShow_results"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
-   <addaction name="menuAnalyse_settings"/>
-   <addaction name="menuSTART"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen">

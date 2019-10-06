@@ -17,6 +17,7 @@ from PyQt5.uic import loadUiType
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar)
+from PyQt5 import QtWidgets
 
 # To maintain the tips on editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
@@ -27,11 +28,7 @@ from my_utils import create_dirs, export_results, plot_results
 config = ConfigParser()
 config.read('settings.ini')
 
-# TODO Be able to analyse a video be sequences of lenght l seconds. Then plot theses sequences side by side on same fig
-# TODO Substract many frames from each other.
-# TODO Fix scale at wich it is plotted
-# TODO One plot with the sum.
-# TODO add a stop analysis button
+# TODO Export the error too !
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
         super(Main, self).__init__()
@@ -55,14 +52,14 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionx_shift.triggered.connect(self.plotSelection)
         self.actionViolin_all_on_one.triggered.connect(self.plotSelection)
         self.actionViolin_chop.triggered.connect(self.plotSelection)
-        self.actionStart_analysis.triggered.connect(self.startAnalysis)
-        self.actionShow_results.triggered.connect(self.showResults)
-        self.actionx_shift.setChecked(bool(config.get('section_b', 'actionx_shift')))
-        self.actiony_shift.setChecked(bool(config.get('section_b', 'actiony_shift')))
-        self.actionPos.setChecked(bool(config.get('section_b', 'actionPos')))
-        self.actionViolin.setChecked(bool(config.get('section_b', 'actionViolin')))
-        self.actionViolin_all_on_one.setChecked(bool(config.get('section_b', 'actionViolin_all_on_one')))
-        self.actionViolin_chop.setChecked(bool(config.get('section_b', 'actionViolin_chop')))
+        #self.actionStart_analysis.triggered.connect(self.startAnalysis)
+        #self.actionShow_results.triggered.connect(self.showResults)
+        self.actionx_shift.setChecked(bool(config.getboolean('section_b', 'actionx_shift')))
+        self.actiony_shift.setChecked(bool(config.getboolean('section_b', 'actiony_shift')))
+        self.actionPos.setChecked(bool(config.getboolean('section_b', 'actionpos')))
+        self.actionViolin.setChecked(bool(config.getboolean('section_b', 'actionviolin')))
+        self.actionViolin_all_on_one.setChecked(bool(config.getboolean('section_b', 'actionviolin_all_on_one')))
+        self.actionViolin_chop.setChecked(bool(config.getboolean('section_b', 'actionviolin_chop')))
 
 
         self.lineEdit_pix_size.setText(config.get('section_a', 'pix_size'))
@@ -83,6 +80,33 @@ class Main(QMainWindow, Ui_MainWindow):
         self.lineEdit_substract_lvl.setText(config.get('section_b', 'substract_lvl'))
         self.comboBox_substract_col.currentIndexChanged.connect(self.substract)
         self.lineEdit_chop_sec.setText(config.get('section_b', 'chop_sec'))
+
+        self.actionAdd_box = QtWidgets.QAction()
+        self.actionAdd_box.setObjectName('actionAdd_box')
+        self.menubar.addAction(self.actionAdd_box)
+        self.actionAdd_box.setText('Add analyse box')
+        self.actionAdd_box.triggered.connect(self.addDraggableRectangle)
+        self.actionAdd_box.setShortcut("A")
+
+        self.actionStart_solver = QtWidgets.QAction()
+        self.actionStart_solver.setObjectName('actionStart_solver')
+        self.menubar.addAction(self.actionStart_solver)
+        self.actionStart_solver.setText('Start Analysis')
+        self.actionStart_solver.triggered.connect(self.startAnalysis)
+        self.actionStart_solver.setShortcut("S")
+
+        self.actionShow_results = QtWidgets.QAction()
+        self.actionShow_results.setObjectName('actionShow_results')
+        self.menubar.addAction(self.actionShow_results)
+        self.actionShow_results.setText('Show plots')
+        self.actionShow_results.triggered.connect(self.showResults)
+        self.actionShow_results.setShortcut("V")
+
+        self.actionStop_solver = QtWidgets.QAction()
+        self.actionStop_solver.setObjectName('actionStop_solver')
+        self.menubar.addAction(self.actionStop_solver)
+        self.actionStop_solver.setText('Stop Analysis')
+        self.actionStop_solver.triggered.connect(self.stopAnalysis)
 
 
 
@@ -273,9 +297,10 @@ class Main(QMainWindow, Ui_MainWindow):
         config.set('section_b', 'chop_sec', self.lineEdit_chop_sec.text())
         config.set('section_b', 'actionx_shift', str(self.actionx_shift.isChecked()))
         config.set('section_b', 'actiony_shift', str(self.actiony_shift.isChecked()))
-        config.set('section_b', 'actionViolin', str(self.actionViolin.isChecked()))
-        config.set('section_b', 'actionViolin_all_on_one', str(self.actionViolin.isChecked()))
-        config.set('section_b', 'actionViolin_chop', str(self.actionViolin_chop.isChecked()))
+        config.set('section_b', 'actionpos', str(self.actionPos.isChecked()))
+        config.set('section_b', 'actionviolin', str(self.actionViolin.isChecked()))
+        config.set('section_b', 'actionviolin_all_on_one', str(self.actionViolin.isChecked()))
+        config.set('section_b', 'actionviolin_chop', str(self.actionViolin_chop.isChecked()))
         with open('settings.ini', 'w') as configfile:
             config.write(configfile)
         print('Parameters saved')
@@ -292,6 +317,11 @@ class Main(QMainWindow, Ui_MainWindow):
         self.solver_list[0].start()
         self.figure.savefig(self.output_name + "boxes_selection.png")
 
+    def stopAnalysis(self):
+        print("STOPPING ANALYSIS")
+        for solver in self.solver_list:
+            solver.stop()
+
     def updateProgress(self, progress, frame, image):
         for j in range(len(self.boxes_dict)):
             item = self.boxes.item(j)
@@ -303,9 +333,9 @@ class Main(QMainWindow, Ui_MainWindow):
     def showResults(self):
         # print(self.solver_list)
         for solver in self.solver_list:
-            plot_results(shift_x=solver.shift_x, shift_y=solver.shift_y, fps=solver.fps, res=solver.res,
+            plot_results(shift_x=solver.shift_x, shift_x_y_error = solver.shift_x_y_error, shift_y=solver.shift_y, fps=solver.fps, res=solver.res,
                          output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
-                         chop=self.checkBox_chop.isChecked(), chop_sec=float(self.lineEdit_chop_sec.text()))
+                         chop_sec=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame)
         print("Plots showed")
 
     def export_results(self):
