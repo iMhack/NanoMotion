@@ -25,10 +25,11 @@ def plot_results(shift_x, shift_x_y_error, shift_y, fps, res, output_name, plots
         shift_y_step_um = [my_shift_y_um[i + 1] - my_shift_y_um[i] for i in range(len(my_shift_y_um) - 1)]
         shift_length_step_um = np.sqrt(np.square(shift_x_step_um) + np.square(shift_y_step_um))
         ls='dotted'
+        fmt='o'
         if (plots_dict["x(t)_shift"]):
             plt.figure(num=output_name + 'x(t), um(s)')
 #            plt.plot([frame / fps for frame in range(len(my_shift_x))], [x * res for x in my_shift_x], "-")
-            plt.errorbar([frame / fps for frame in range(len(my_shift_x))], my_shift_x_um, ls=ls, fmt='o',
+            plt.errorbar([frame / fps for frame in range(len(my_shift_x))], my_shift_x_um, ls=ls, fmt=fmt,
                          yerr=my_shift_x_um_error)
             plt.grid()
             plt.title("x(t), #" + str(solver_number) + "")
@@ -64,7 +65,8 @@ def plot_results(shift_x, shift_x_y_error, shift_y, fps, res, output_name, plots
 
         if (plots_dict["y(t)_shift"]):
             plt.figure(num=output_name + 'y(t), um(s)')
-            plt.plot([frame / fps for frame in range(len(my_shift_y))], [x * res for x in my_shift_y], "-")
+            plt.errorbar([frame / fps for frame in range(len(my_shift_y))], my_shift_y_um, ls=ls, fmt=fmt,
+                         yerr=my_shift_y_um_error)
             plt.grid()
             plt.title("y(t), #" + str(solver_number) + "")
             plt.xlabel("t, s")
@@ -73,7 +75,8 @@ def plot_results(shift_x, shift_x_y_error, shift_y, fps, res, output_name, plots
 
         if (plots_dict["pos(t)"]):
             plt.figure(num=output_name + 'y(x), um(um)')
-            plt.plot([x * res for x in my_shift_x], [y * res for y in my_shift_y], "-")
+            plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt,
+                         yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
             plt.grid()
             plt.title("y(x), #" + str(solver_number) + "")
             plt.xlabel("x, um")
