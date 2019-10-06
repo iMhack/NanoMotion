@@ -69,6 +69,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
           <property name="toolTip">
            <string>Sensor pixel size</string>
           </property>
@@ -110,6 +113,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
           <property name="toolTip">
            <string>Enlarging factor</string>
           </property>
@@ -150,6 +156,9 @@
             <width>50</width>
             <height>16777215</height>
            </size>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
           </property>
           <property name="toolTip">
            <string>100 is usually good</string>
@@ -195,6 +204,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
           <property name="text">
            <string>25</string>
           </property>
@@ -232,6 +244,9 @@
             <width>50</width>
             <height>16777215</height>
            </size>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
           </property>
           <property name="text">
            <string>0</string>
@@ -271,6 +286,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
           <property name="text">
            <string>199</string>
           </property>
@@ -309,6 +327,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
           <property name="text">
            <string>40</string>
           </property>
@@ -346,6 +367,9 @@
             <width>50</width>
             <height>16777215</height>
            </size>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
           </property>
           <property name="text">
            <string>40</string>
@@ -388,6 +412,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
           <property name="toolTip">
            <string>How many times in range to do this ?</string>
           </property>
@@ -419,18 +446,11 @@
           </property>
          </widget>
         </item>
-        <item row="11" column="0">
-         <widget class="QCheckBox" name="checkBox_chop">
-          <property name="layoutDirection">
-           <enum>Qt::RightToLeft</enum>
-          </property>
-          <property name="text">
-           <string>Chop, seconds </string>
-          </property>
-         </widget>
-        </item>
         <item row="11" column="1">
          <widget class="QLineEdit" name="lineEdit_chop_sec">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -443,6 +463,22 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Numbers of second of every slice</string>
+          </property>
+          <property name="statusTip">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="0">
+         <widget class="QLabel" name="label_chop_sec">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Chop duration seconds</string>
+          </property>
          </widget>
         </item>
        </layout>
@@ -450,7 +486,7 @@
       <item>
        <widget class="QListWidget" name="views">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -512,6 +548,7 @@
      <addaction name="actionPos"/>
      <addaction name="actionx_shift"/>
      <addaction name="actiony_shift"/>
+     <addaction name="actionViolin_chop"/>
     </widget>
     <addaction name="actionSubstract"/>
     <addaction name="menuView_plot"/>
@@ -670,6 +707,14 @@
    </property>
    <property name="text">
     <string>Violin_all_on_one</string>
+   </property>
+  </action>
+  <action name="actionViolin_chop">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Violin_chop</string>
    </property>
   </action>
  </widget>

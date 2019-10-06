@@ -54,8 +54,17 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actiony_shift.triggered.connect(self.plotSelection)
         self.actionx_shift.triggered.connect(self.plotSelection)
         self.actionViolin_all_on_one.triggered.connect(self.plotSelection)
+        self.actionViolin_chop.triggered.connect(self.plotSelection)
         self.actionStart_analysis.triggered.connect(self.startAnalysis)
         self.actionShow_results.triggered.connect(self.showResults)
+        self.actionx_shift.setChecked(bool(config.get('section_b', 'actionx_shift')))
+        self.actiony_shift.setChecked(bool(config.get('section_b', 'actiony_shift')))
+        self.actionPos.setChecked(bool(config.get('section_b', 'actionPos')))
+        self.actionViolin.setChecked(bool(config.get('section_b', 'actionViolin')))
+        self.actionViolin_all_on_one.setChecked(bool(config.get('section_b', 'actionViolin_all_on_one')))
+        self.actionViolin_chop.setChecked(bool(config.get('section_b', 'actionViolin_chop')))
+
+
         self.lineEdit_pix_size.setText(config.get('section_a', 'pix_size'))
         self.lineEdit_magn.setText(config.get('section_a', 'magn'))
         self.lineEdit_sub_pix.setText(config.get('section_a', 'sub_pix'))
@@ -138,6 +147,8 @@ class Main(QMainWindow, Ui_MainWindow):
         for action in self.menuView_plot.actions():
             self.plots_dict[action.text()] = action.isChecked()
             print("menuView is " + action.text() + " " + str(action.isChecked()))
+        self.lineEdit_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
+        self.label_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
 
 
     def browse_file(self):
@@ -224,7 +235,6 @@ class Main(QMainWindow, Ui_MainWindow):
             except:
                 print("Unable to un-substract")
 
-
     def addDraggableRectangle(self):
         # print("\naddDraggableRectangle()")
         w = int(self.lineEdit_w.text())
@@ -261,6 +271,11 @@ class Main(QMainWindow, Ui_MainWindow):
         config.set('section_b', 'substract_col', self.comboBox_substract_col.currentText())
         config.set('section_b', 'substract_lvl', self.lineEdit_substract_lvl.text())
         config.set('section_b', 'chop_sec', self.lineEdit_chop_sec.text())
+        config.set('section_b', 'actionx_shift', str(self.actionx_shift.isChecked()))
+        config.set('section_b', 'actiony_shift', str(self.actiony_shift.isChecked()))
+        config.set('section_b', 'actionViolin', str(self.actionViolin.isChecked()))
+        config.set('section_b', 'actionViolin_all_on_one', str(self.actionViolin.isChecked()))
+        config.set('section_b', 'actionViolin_chop', str(self.actionViolin_chop.isChecked()))
         with open('settings.ini', 'w') as configfile:
             config.write(configfile)
         print('Parameters saved')
