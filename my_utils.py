@@ -39,7 +39,7 @@ def plot_results(shift_x, shift_x_y_error, shift_y, fps, res, output_name, plots
         if (plots_dict["Violin_step_length"]):
             plt.figure(num=output_name + 'violin of step length')
             plt.ylabel("step length, um")
-            sns.violinplot(data=shift_length_step_um)
+            sns.violinplot(data=shift_length_step_um, inner="stick")
             plt.title("Violin, #" + str(solver_number) + "")
             plt.savefig(output_name + "_violin.png")
 
@@ -52,7 +52,7 @@ def plot_results(shift_x, shift_x_y_error, shift_y, fps, res, output_name, plots
             number_of_full_chops = int(len(shift_length_step_um)/number_of_frame_in_a_chop) # 0 1 2 1 0, [0 1] [2 1], 0 1
             #print(number_of_full_chops)
             chopped_data = [shift_length_step_um[number_of_frame_in_a_chop*i:number_of_frame_in_a_chop*(i+1)] for i in range(number_of_full_chops)]
-            g = sns.violinplot(data=chopped_data)
+            g = sns.violinplot(data=chopped_data, inner="stick")
             labels=["["+str(start_frame+number_of_frame_in_a_chop*i)+","+str(start_frame+number_of_frame_in_a_chop*(i+1)-1)+"]" for i in range(number_of_full_chops)]
             #print(labels)
             plt.xlabel("frame range")
@@ -88,7 +88,7 @@ def plot_results(shift_x, shift_x_y_error, shift_y, fps, res, output_name, plots
         plt.figure(num=output_name + 'Violins')
         plt.ylabel("step length, um")
         plt.xlabel("Zone #")
-        sns.violinplot(data=shift_lenght_all)
+        sns.violinplot(data=shift_lenght_all, inner="stick")
         plt.title("Violin, #0 to #" + str(solver_number) + " ")
         plt.savefig(output_name + "_violin_all.png")
 
