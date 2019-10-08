@@ -1,3 +1,9 @@
+# Installation
+
+conda install pyqt
+pip install imageio-ffmpeg pims
+
+
 # NanoMotion
 
 Code aimed to detect nano motion on video files/set of pictures
@@ -9,3 +15,4 @@ Code aimed to detect nano motion on video files/set of pictures
 4 : Set the plots to plot
 5 : START the plotting
 6 : Export the results 
+
