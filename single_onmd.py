@@ -119,27 +119,33 @@ class Main(QMainWindow, Ui_MainWindow):
         self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
 
     def startFrame(self, update=True):
-        if int(self.lineEdit_start_frame.text())>=self.orignalVideoLen:
-            self.lineEdit_start_frame.setText(str(self.orignalVideoLen-1))
-        if self.fileName != "" :
-            try:
-                if update:
-                    self.imshow.set_data(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
-                    self.figure.canvas.draw()
-                    self.figure.canvas.flush_events()
-                return self.videodata.get_frame(int(self.lineEdit_start_frame.text()))
-            except:
-                print("Tried to change the 1st frame to show. FAILED")
-                return 0
+        if self.orignalVideoLen != float('inf'):
+            if int(self.lineEdit_start_frame.text())>=self.orignalVideoLen:
+                self.lineEdit_start_frame.setText(str(self.orignalVideoLen-1))
+            if self.fileName != "" :
+                try:
+                    if update:
+                        self.imshow.set_data(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
+                        self.figure.canvas.draw()
+                        self.figure.canvas.flush_events()
+                    return self.videodata.get_frame(int(self.lineEdit_start_frame.text()))
+                except:
+                    print("Tried to change the 1st frame to show. FAILED")
+                    return 0
+        else:
+            return 0
 
     def stopFrame(self):
-        if int(self.lineEdit_stop_frame.text())>=self.orignalVideoLen:
-            self.lineEdit_stop_frame.setText(str(self.orignalVideoLen-1))
-        if self.fileName != "" :
-            try:
-                return self.videodata.get_frame(int(self.lineEdit_stop_frame.text()))
-            except:
-                print("Tried to load the last frame. FAILED")
+        if self.orignalVideoLen != float('inf'):
+            if int(self.lineEdit_stop_frame.text())>=self.orignalVideoLen:
+                self.lineEdit_stop_frame.setText(str(self.orignalVideoLen-1))
+            if self.fileName != "" :
+                try:
+                    return self.videodata.get_frame(int(self.lineEdit_stop_frame.text()))
+                except:
+                    print("Tried to load the last frame. FAILED")
+                    return 0
+            else:
                 return 0
 
     def dragEnterEvent(self, e):
@@ -201,9 +207,10 @@ class Main(QMainWindow, Ui_MainWindow):
             print("Nothing to clear")
 
         try:
-            self.videodata = pims.Video(self.fileName)
+            self.videodata = pims.ImageSequence(self.fileName)
+
         except:
-            self.videodata = pims.ImageSequence(self.fileName)  # So one can drop a set of images
+            self.videodata = pims.Video(self.fileName)
 
         shape = np.shape(self.videodata.get_frame(0))
         try:
