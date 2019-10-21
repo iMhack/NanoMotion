@@ -1,3 +1,4 @@
+
 print("Beginning of the code")
 from configparser import ConfigParser
 import sys
@@ -6,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
+import matplotlib.animation as animation
 import pims
 from skimage.color import rgb2gray
 import os.path
@@ -14,6 +16,7 @@ from threading import RLock
 verrou = RLock()
 from PyQt5.QtWidgets import (QApplication, QFileDialog)
 from PyQt5.uic import loadUiType
+from PyQt5.QtCore import QTimer
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar)
@@ -40,6 +43,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.solver_list = []
         self.basename = None
         self.orignalVideoLen = 0
+        self.timer = 0
 
         self.actionOpen.triggered.connect(self.browse_file)
         self.actionExport_results.triggered.connect(self.export_results)
@@ -323,19 +327,35 @@ class Main(QMainWindow, Ui_MainWindow):
         self.solver_list[0].progressChanged.connect(self.updateProgress)
         self.solver_list[0].start()
         self.figure.savefig(self.output_name + "boxes_selection.png")
+        # animation.FuncAnimation(self.figure, self.updateProgress, interval=1000)
+        #self.timer = animation.FuncAnimation(self.figure, self.updateProgress, interval=10)
+        plt.show()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.updateProgress)
+        self.timer.start(100)
+        print('timer started etc')
 
     def stopAnalysis(self):
         print("STOPPING ANALYSIS")
+        self.timer.stop()
         for solver in self.solver_list:
             solver.stop()
 
-    def updateProgress(self, progress, frame, image):
-        for j in range(len(self.boxes_dict)):
-            item = self.boxes.item(j)
-            item.setText(str(j) + " " + str(progress) + "%: f#" + str(frame-int(self.lineEdit_start_frame.text())) + "/"
-                         + str(int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
-        #self.imshow.set_data(rgb2gray(image))
-        #self.figure.canvas.draw()
+    def updateProgress(self):
+        for s in self.solver_list:
+            if s.progress == 100:
+                self.timer.stop()
+            for j in range(len(self.boxes_dict)):
+                item = self.boxes.item(j)
+                item.setText(str(j) + " " + str(s.progress) + "%: f#" + str(s.actual_i-int(self.lineEdit_start_frame.text())) + "/"
+                             + str(int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
+            self.imshow.set_data(rgb2gray(s.frame_n))
+            for r in self.boxes_dict:
+                r.update_from_solver()
+            self.figure.canvas.blit()
+            #plt.show(block=False)
+            #self.figure.canvas.flush_events()
+
 
     def showResults(self):
         # print(self.solver_list)

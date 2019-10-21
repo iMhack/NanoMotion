@@ -52,3 +52,9 @@ class DraggableRectangle:
         self.rect.figure.canvas.mpl_disconnect(self.cidpress)
         self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
         self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
+
+    def update_from_solver(self):
+        self.rect.set_x(self.x_rect)
+        self.rect.set_y(self.y_rect)
+        self.text.set_position(xy=(self.x_rect,self.y_rect))
+        #self.rect.figure.canvas.draw()
