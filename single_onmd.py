@@ -293,8 +293,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.boxes_dict.append(dr)
         self.boxes.addItem(str(length))
 
-    def startAnalysis(self):
-        self.solver_list.clear()
+    def saveParameters(self):
         config.set('section_a', 'pix_size', self.lineEdit_pix_size.text())
         config.set('section_a', 'magn', self.lineEdit_magn.text())
         config.set('section_a', 'sub_pix', self.lineEdit_sub_pix.text())
@@ -318,6 +317,9 @@ class Main(QMainWindow, Ui_MainWindow):
             config.write(configfile)
         print('Parameters saved')
 
+    def startAnalysis(self):
+        self.solver_list.clear()
+        self.saveParameters()
         self.output_name = create_dirs(self.fileName, "")
         solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
                         box_dict=self.boxes_dict, solver_number=0,
@@ -331,9 +333,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.solver_list[0].progressChanged.connect(self.updateProgress)
         self.solver_list[0].start()
         self.figure.savefig(self.output_name + "boxes_selection.png")
-        # animation.FuncAnimation(self.figure, self.updateProgress, interval=1000)
-        # self.timer = animation.FuncAnimation(self.figure, self.updateProgress, interval=10)
-        plt.show()
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateProgress)
         self.timer.start(100)

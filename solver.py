@@ -78,15 +78,18 @@ class Solver(QThread):
                 with verrou:
                     self.frame_n = rgb2gray(self.videodata.get_frame(i))
                 for j in range(len(self.box_dict)):  # j runs on all the boxes
-                    image_n = (
-                        self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]])
+                    image_n = (self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]])
                     # t = time_logging.end("Load frame", t)
                     shift, error, diffphase = register_translation(image_n, image_1[j], self.my_upsample_factor)
                     if not self.compare_first:  # We store the actual as the futur old one
                         image_1[j] = image_n
                         if not i == self.start_frame:
-                            shift[1] = self.shift_x[j][-1] + shift[1]  # This had to be done to have the same output
-                            shift[0] = -self.shift_y[j][-1] + shift[0]
+                            #print('Before reshift'+str(shift[1])+'and box_shift is '+str(self.box_shift[j][0]))
+                            shift[1] = self.shift_x[j][-1] + shift[1]-self.box_shift[j][0]  # This had to be done to have the same output
+                            shift[0] = -self.shift_y[j][-1] + shift[0]-self.box_shift[j][1]
+                            #print('After reshift'+str(shift[1])) # We changed the original frame at each new box mvt.
+                            # So it was OK to check the value of shift to see if this box had to be moved again. As
+                            # we change the frame every time, it have to be done differently.
 
                     # t = time_logging.end("Compute register_translation", t)
 
@@ -94,19 +97,18 @@ class Solver(QThread):
                     self.shift_y[j].append(-shift[0] - self.box_shift[j][1])
                     self.shift_x_y_error[j].append(error)
                     if self.track and (abs(shift[1]) >= 1 or abs(shift[0]) >= 1):
-                        # print('Moving box ! ' + str(shift[1]) + 'x, ' + str(shift[0]) + 'y !!!')
-                        # print('Old box position was ' + str(
-                        #    (self.row_min[j], self.row_max[j], self.col_min[j], self.col_max[j])) + '.')
+                        #print('Moving box ! ' + str(shift[1]) + 'x, ' + str(shift[0]) + 'y !!!')
+                        #print('Old box position was ' + str(
+                        #(self.row_min[j], self.row_max[j], self.col_min[j], self.col_max[j])) + '.')
                         # Take actual frame as reference.
                         self.box_dict[j].x_rect += int(shift[1])  # 1.2 -> 1-0, 1.8 -> 3-1
                         self.box_dict[j].y_rect += int(shift[0])
                         self._crop_coord(j)  # Uptate the boundaries
-                        image_1[j] = (
-                            self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]])
+                        image_1[j] = self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]
                         # Remember the shift up-to now
                         self.box_shift[j][0] += int(shift[1])
                         self.box_shift[j][1] += int(shift[0])
-                        # print('New box position is ' + str(
+                        #print('New box position is ' + str(
                         #    (self.row_min[j], self.row_max[j], self.col_min[j], self.col_max[j])) + '.')
                         # print('Ended moving box ! new')
                 self.progress = int(((i - self.start_frame) / lenght) * 100)
