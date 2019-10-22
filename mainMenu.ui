@@ -481,6 +481,19 @@
           </property>
          </widget>
         </item>
+        <item row="12" column="0">
+         <widget class="QCheckBox" name="checkBox_track">
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>Track particle </string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>

@@ -11,7 +11,8 @@ verrou = RLock()
 class Solver(QThread):
     progressChanged = pyqtSignal(int, int, object)
 
-    def __init__(self, videodata, fps, res, box_dict, solver_number, start_frame, stop_frame, my_upsample_factor):
+    def __init__(self, videodata, fps, res, box_dict, solver_number, start_frame, stop_frame, my_upsample_factor,
+                 track):
         QThread.__init__(self)
         self.solver_number = solver_number  # Stores the ID of the solver
         self.videodata = videodata  # Stores an access to the file to get frames
@@ -22,6 +23,7 @@ class Solver(QThread):
         self.fps = fps  # Frames per seconds
         self.res = res  # Size of pixel (um / pix)
         self.my_upsample_factor = my_upsample_factor
+        self.track = track
         self.start_frame = start_frame
         self.stop_frame = stop_frame
         self.box_dict = box_dict
@@ -37,8 +39,9 @@ class Solver(QThread):
         self.shift_y = [[] for _ in self.box_dict]
         self.shift_x_y_error = [[] for _ in self.box_dict]
         self.box_shift = [[0 for _ in range(2)] for _ in self.box_dict]
-        self.actual_i=start_frame
-        self.frame_n=self.videodata.get_frame(start_frame)
+        self.actual_i = start_frame
+        self.frame_n = self.videodata.get_frame(start_frame)
+        self.progress = 0
 
     def run(self):
         self._crop_coord()
@@ -69,7 +72,7 @@ class Solver(QThread):
         # t = time_logging.end("Load frame", t)
         progress_pivot = 0 - 5
         for i in range(self.start_frame, self.stop_frame + 1):
-            self.actual_i=i
+            self.actual_i = i
             if self.go_on:
                 with verrou:
                     self.frame_n = (self.videodata.get_frame(i))
@@ -82,25 +85,26 @@ class Solver(QThread):
                     self.shift_x[j].append(shift[1] + self.box_shift[j][0])
                     self.shift_y[j].append(-shift[0] - self.box_shift[j][1])
                     self.shift_x_y_error[j].append(error)
-                    if abs(shift[1]) >= 1 or abs(shift[0]) >= 1:
-                        #print('Moving box ! ' + str(shift[1]) + 'x, ' + str(shift[0]) + 'y !!!')
-                        #print('Old box position was ' + str(
+                    if self.track and (abs(shift[1]) >= 1 or abs(shift[0]) >= 1):
+                        # print('Moving box ! ' + str(shift[1]) + 'x, ' + str(shift[0]) + 'y !!!')
+                        # print('Old box position was ' + str(
                         #    (self.row_min[j], self.row_max[j], self.col_min[j], self.col_max[j])) + '.')
                         # Take actual frame as reference.
-                        self.box_dict[j].x_rect += int(shift[1]) #1.2 -> 1-0, 1.8 -> 3-1
+                        self.box_dict[j].x_rect += int(shift[1])  # 1.2 -> 1-0, 1.8 -> 3-1
                         self.box_dict[j].y_rect += int(shift[0])
                         self._crop_coord(j)  # Uptate the boundaries
-                        image_1[j] = rgb2gray(self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]])
+                        image_1[j] = rgb2gray(
+                            self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]])
                         # Remember the shift up-to now
                         self.box_shift[j][0] += int(shift[1])
                         self.box_shift[j][1] += int(shift[0])
-                        #print('New box position is ' + str(
+                        # print('New box position is ' + str(
                         #    (self.row_min[j], self.row_max[j], self.col_min[j], self.col_max[j])) + '.')
-                        #print('Ended moving box ! new')
+                        # print('Ended moving box ! new')
                 self.progress = int(((i - self.start_frame) / lenght) * 100)
                 # self.progressChanged.emit(self.progress, i, )
                 if self.progress > progress_pivot + 4:
-                    #self.progressChanged.emit(self.progress, i, self.frame_n)
+                    # self.progressChanged.emit(self.progress, i, self.frame_n)
                     print(str(self.progress) + "%: analyse frame " + str(i - self.start_frame) + "/" + str(
                         self.stop_frame - self.start_frame))
                     progress_pivot = self.progress
@@ -123,7 +127,7 @@ class Solver(QThread):
                 self.col_min.append(int(self.box_dict[i].x_rect))
                 self.col_max.append(int(self.box_dict[i].x_rect) + self.box_dict[i].rect._width)
         else:
-            #print('_crop_coord of ' + str(which))
+            # print('_crop_coord of ' + str(which))
             i = which
             self.row_min[i] = int(self.box_dict[i].y_rect)
             self.row_max[i] = int(self.box_dict[i].y_rect) + self.box_dict[i].rect._height

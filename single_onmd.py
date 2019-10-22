@@ -1,4 +1,3 @@
-
 print("Beginning of the code")
 from configparser import ConfigParser
 import sys
@@ -28,8 +27,10 @@ from mainMenu import (Ui_MainWindow)  # This is used only to have the tips on ed
 from dragRectangle import DraggableRectangle
 from solver import Solver
 from my_utils import create_dirs, export_results, plot_results
+
 config = ConfigParser()
 config.read('settings.ini')
+
 
 # TODO Export the error too !
 class Main(QMainWindow, Ui_MainWindow):
@@ -48,7 +49,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionOpen.triggered.connect(self.browse_file)
         self.actionExport_results.triggered.connect(self.export_results)
         self.actionSubstract.triggered.connect(self.substract)
-        #self.actionSubstract.setDisabled(True)
+        # self.actionSubstract.setDisabled(True)
         self.actionAdd_box.triggered.connect(self.addDraggableRectangle)
         self.actionViolin.triggered.connect(self.plotSelection)
         self.actionPos.triggered.connect(self.plotSelection)
@@ -56,15 +57,15 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionx_shift.triggered.connect(self.plotSelection)
         self.actionViolin_all_on_one.triggered.connect(self.plotSelection)
         self.actionViolin_chop.triggered.connect(self.plotSelection)
-        #self.actionStart_analysis.triggered.connect(self.startAnalysis)
-        #self.actionShow_results.triggered.connect(self.showResults)
+        # self.actionStart_analysis.triggered.connect(self.startAnalysis)
+        # self.actionShow_results.triggered.connect(self.showResults)
         self.actionx_shift.setChecked(bool(config.getboolean('section_b', 'actionx_shift')))
         self.actiony_shift.setChecked(bool(config.getboolean('section_b', 'actiony_shift')))
         self.actionPos.setChecked(bool(config.getboolean('section_b', 'actionpos')))
         self.actionViolin.setChecked(bool(config.getboolean('section_b', 'actionviolin')))
         self.actionViolin_all_on_one.setChecked(bool(config.getboolean('section_b', 'actionviolin_all_on_one')))
         self.actionViolin_chop.setChecked(bool(config.getboolean('section_b', 'actionviolin_chop')))
-
+        self.checkBox_track.setChecked(bool(config.getboolean('section_a', 'checkBox_track')))
 
         self.lineEdit_pix_size.setText(config.get('section_a', 'pix_size'))
         self.lineEdit_magn.setText(config.get('section_a', 'magn'))
@@ -112,8 +113,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionStop_solver.setText('Stop Analysis')
         self.actionStop_solver.triggered.connect(self.stopAnalysis)
 
-
-
         self.fileName = ""
         self.cell_n = ""
         self.polyg_size = 40
@@ -124,9 +123,9 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def startFrame(self, update=True):
         if self.orignalVideoLen != float('inf'):
-            if int(self.lineEdit_start_frame.text())>=self.orignalVideoLen:
-                self.lineEdit_start_frame.setText(str(self.orignalVideoLen-1))
-            if self.fileName != "" :
+            if int(self.lineEdit_start_frame.text()) >= self.orignalVideoLen:
+                self.lineEdit_start_frame.setText(str(self.orignalVideoLen - 1))
+            if self.fileName != "":
                 try:
                     if update:
                         self.imshow.set_data(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
@@ -141,9 +140,9 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def stopFrame(self):
         if self.orignalVideoLen != float('inf'):
-            if int(self.lineEdit_stop_frame.text())>=self.orignalVideoLen:
-                self.lineEdit_stop_frame.setText(str(self.orignalVideoLen-1))
-            if self.fileName != "" :
+            if int(self.lineEdit_stop_frame.text()) >= self.orignalVideoLen:
+                self.lineEdit_stop_frame.setText(str(self.orignalVideoLen - 1))
+            if self.fileName != "":
                 try:
                     return self.videodata.get_frame(int(self.lineEdit_stop_frame.text()))
                 except:
@@ -183,7 +182,6 @@ class Main(QMainWindow, Ui_MainWindow):
             print("menuView is " + action.text() + " " + str(action.isChecked()))
         self.lineEdit_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
         self.label_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
-
 
     def browse_file(self):
         self.fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
@@ -226,10 +224,11 @@ class Main(QMainWindow, Ui_MainWindow):
         self.figure = Figure()
         sub = self.figure.add_subplot(111)
         try:
-            self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))), cmap='gray')
+            self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))),
+                                     cmap='gray')
         except:
             self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(0)), cmap='gray')
-        self.basename=os.path.basename(self.fileName)
+        self.basename = os.path.basename(self.fileName)
         self.views.addItem(self.basename)
         self.canvas = FigureCanvas(self.figure)
         self.canvas.mpl_connect('motion_notify_event', self.mouse_event)
@@ -237,29 +236,29 @@ class Main(QMainWindow, Ui_MainWindow):
         self.canvas.draw()
         self.toolbar = NavigationToolbar(self.canvas, self, coordinates=True)
         self.addToolBar(self.toolbar)
-        self.stopFrame()  #Check new boundary
+        self.stopFrame()  # Check new boundary
 
     def substract(self):  # TODO edit it to work with boundaries we set
         if self.checkBox_substract.isChecked():
             print("substract")
             try:
-                start_frame=int(self.lineEdit_start_frame.text())
-                stop_frame=int(self.lineEdit_stop_frame.text())
-                n_frames=stop_frame-start_frame
+                start_frame = int(self.lineEdit_start_frame.text())
+                stop_frame = int(self.lineEdit_stop_frame.text())
+                n_frames = stop_frame - start_frame
                 first_frame = rgb2gray(self.videodata.get_frame(start_frame))
                 print(type(first_frame))
-                cumulative_frame=np.zeros(np.shape(first_frame))
+                cumulative_frame = np.zeros(np.shape(first_frame))
                 print(type(cumulative_frame))
-                for i in range(stop_frame, start_frame, -int(n_frames/int(self.lineEdit_substract_lvl.text()))):
+                for i in range(stop_frame, start_frame, -int(n_frames / int(self.lineEdit_substract_lvl.text()))):
                     print(i)
-                    cumulative_frame += rgb2gray(self.videodata.get_frame(i))-first_frame
+                    cumulative_frame += rgb2gray(self.videodata.get_frame(i)) - first_frame
 
                 self.imshow.set_data(rgb2gray(cumulative_frame))
                 print("upto set_cmap")
                 self.imshow.set_cmap(self.comboBox_substract_col.currentText())
                 self.figure.canvas.draw()
             except:
-               print("Wasn't able to substract")
+                print("Wasn't able to substract")
 
         else:
             try:
@@ -312,6 +311,7 @@ class Main(QMainWindow, Ui_MainWindow):
         config.set('section_b', 'actionviolin', str(self.actionViolin.isChecked()))
         config.set('section_b', 'actionviolin_all_on_one', str(self.actionViolin.isChecked()))
         config.set('section_b', 'actionviolin_chop', str(self.actionViolin_chop.isChecked()))
+        config.set('section_a', 'checkBox_track', str(self.checkBox_track.isChecked()))
         with open('settings.ini', 'w') as configfile:
             config.write(configfile)
         print('Parameters saved')
@@ -322,13 +322,14 @@ class Main(QMainWindow, Ui_MainWindow):
                         my_upsample_factor=int(self.lineEdit_sub_pix.text()),
                         stop_frame=int(self.lineEdit_stop_frame.text()),
                         start_frame=int(self.lineEdit_start_frame.text()),
-                        res=float(self.lineEdit_pix_size.text()))
+                        res=float(self.lineEdit_pix_size.text()),
+                        track=self.checkBox_track.isChecked())
         self.solver_list.append(solver)
         self.solver_list[0].progressChanged.connect(self.updateProgress)
         self.solver_list[0].start()
         self.figure.savefig(self.output_name + "boxes_selection.png")
         # animation.FuncAnimation(self.figure, self.updateProgress, interval=1000)
-        #self.timer = animation.FuncAnimation(self.figure, self.updateProgress, interval=10)
+        # self.timer = animation.FuncAnimation(self.figure, self.updateProgress, interval=10)
         plt.show()
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateProgress)
@@ -347,20 +348,21 @@ class Main(QMainWindow, Ui_MainWindow):
                 self.timer.stop()
             for j in range(len(self.boxes_dict)):
                 item = self.boxes.item(j)
-                item.setText(str(j) + " " + str(s.progress) + "%: f#" + str(s.actual_i-int(self.lineEdit_start_frame.text())) + "/"
+                item.setText(str(j) + " " + str(s.progress) + "%: f#" + str(
+                    s.actual_i - int(self.lineEdit_start_frame.text())) + "/"
                              + str(int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
             self.imshow.set_data(rgb2gray(s.frame_n))
             for r in self.boxes_dict:
                 r.update_from_solver()
-            self.figure.canvas.blit()
-            #plt.show(block=False)
-            #self.figure.canvas.flush_events()
-
+            self.figure.canvas.draw()
+            # plt.show(block=False)
+            # self.figure.canvas.flush_events()
 
     def showResults(self):
         # print(self.solver_list)
         for solver in self.solver_list:
-            plot_results(shift_x=solver.shift_x, shift_x_y_error = solver.shift_x_y_error, shift_y=solver.shift_y, fps=solver.fps, res=solver.res,
+            plot_results(shift_x=solver.shift_x, shift_x_y_error=solver.shift_x_y_error, shift_y=solver.shift_y,
+                         fps=solver.fps, res=solver.res,
                          output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
                          chop_sec=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame)
         print("Plots showed")
