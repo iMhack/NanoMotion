@@ -12,7 +12,7 @@ class Solver(QThread):
     progressChanged = pyqtSignal(int, int, object)
 
     def __init__(self, videodata, fps, res, box_dict, solver_number, start_frame, stop_frame, my_upsample_factor,
-                 track):
+                 track, compare_first):
         QThread.__init__(self)
         self.solver_number = solver_number  # Stores the ID of the solver
         self.videodata = videodata  # Stores an access to the file to get frames
@@ -24,6 +24,7 @@ class Solver(QThread):
         self.res = res  # Size of pixel (um / pix)
         self.my_upsample_factor = my_upsample_factor
         self.track = track
+        self.compare_first = compare_first
         self.start_frame = start_frame
         self.stop_frame = stop_frame
         self.box_dict = box_dict
@@ -39,9 +40,9 @@ class Solver(QThread):
         self.shift_y = [[] for _ in self.box_dict]
         self.shift_x_y_error = [[] for _ in self.box_dict]
         self.box_shift = [[0 for _ in range(2)] for _ in self.box_dict]
-        self.actual_i = start_frame
         self.frame_n = self.videodata.get_frame(start_frame)
         self.progress = 0
+        self.actual_i = -1
 
     def run(self):
         self._crop_coord()
@@ -71,17 +72,24 @@ class Solver(QThread):
         # t = time_logging.start()
         # t = time_logging.end("Load frame", t)
         progress_pivot = 0 - 5
-        for i in range(self.start_frame, self.stop_frame + 1):
+        for i in range(self.start_frame, self.stop_frame + 1):  # i run on all the frames
             self.actual_i = i
-            if self.go_on:
+            if self.go_on:  # Condition checked to be able to stop the thread
                 with verrou:
-                    self.frame_n = (self.videodata.get_frame(i))
-                for j in range(len(self.box_dict)):
-                    image_n = rgb2gray(
+                    self.frame_n = rgb2gray(self.videodata.get_frame(i))
+                for j in range(len(self.box_dict)):  # j runs on all the boxes
+                    image_n = (
                         self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]])
                     # t = time_logging.end("Load frame", t)
                     shift, error, diffphase = register_translation(image_n, image_1[j], self.my_upsample_factor)
+                    if not self.compare_first:  # We store the actual as the futur old one
+                        image_1[j] = image_n
+                        if not i == self.start_frame:
+                            shift[1] = self.shift_x[j][-1] + shift[1]  # This had to be done to have the same output
+                            shift[0] = -self.shift_y[j][-1] + shift[0]
+
                     # t = time_logging.end("Compute register_translation", t)
+
                     self.shift_x[j].append(shift[1] + self.box_shift[j][0])
                     self.shift_y[j].append(-shift[0] - self.box_shift[j][1])
                     self.shift_x_y_error[j].append(error)
@@ -93,7 +101,7 @@ class Solver(QThread):
                         self.box_dict[j].x_rect += int(shift[1])  # 1.2 -> 1-0, 1.8 -> 3-1
                         self.box_dict[j].y_rect += int(shift[0])
                         self._crop_coord(j)  # Uptate the boundaries
-                        image_1[j] = rgb2gray(
+                        image_1[j] = (
                             self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]])
                         # Remember the shift up-to now
                         self.box_shift[j][0] += int(shift[1])

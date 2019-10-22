@@ -494,6 +494,26 @@
           </property>
          </widget>
         </item>
+        <item row="13" column="0">
+         <widget class="QCheckBox" name="checkBox_compare_first">
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>Compare to 1st img </string>
+          </property>
+         </widget>
+        </item>
+        <item row="14" column="0">
+         <widget class="QCheckBox" name="checkBox_live_preview">
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>Live preview</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>

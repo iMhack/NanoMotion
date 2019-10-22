@@ -66,6 +66,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionViolin_all_on_one.setChecked(bool(config.getboolean('section_b', 'actionviolin_all_on_one')))
         self.actionViolin_chop.setChecked(bool(config.getboolean('section_b', 'actionviolin_chop')))
         self.checkBox_track.setChecked(bool(config.getboolean('section_a', 'checkBox_track')))
+        self.checkBox_compare_first.setChecked(bool(config.getboolean('section_a', 'checkBox_compare_first')))
 
         self.lineEdit_pix_size.setText(config.get('section_a', 'pix_size'))
         self.lineEdit_magn.setText(config.get('section_a', 'magn'))
@@ -312,6 +313,7 @@ class Main(QMainWindow, Ui_MainWindow):
         config.set('section_b', 'actionviolin_all_on_one', str(self.actionViolin.isChecked()))
         config.set('section_b', 'actionviolin_chop', str(self.actionViolin_chop.isChecked()))
         config.set('section_a', 'checkBox_track', str(self.checkBox_track.isChecked()))
+        config.set('section_a', 'checkBox_compare_first', str(self.checkBox_compare_first.isChecked()))
         with open('settings.ini', 'w') as configfile:
             config.write(configfile)
         print('Parameters saved')
@@ -323,7 +325,8 @@ class Main(QMainWindow, Ui_MainWindow):
                         stop_frame=int(self.lineEdit_stop_frame.text()),
                         start_frame=int(self.lineEdit_start_frame.text()),
                         res=float(self.lineEdit_pix_size.text()),
-                        track=self.checkBox_track.isChecked())
+                        track=self.checkBox_track.isChecked(), compare_first=self.checkBox_compare_first.isChecked()
+                        )
         self.solver_list.append(solver)
         self.solver_list[0].progressChanged.connect(self.updateProgress)
         self.solver_list[0].start()
@@ -351,12 +354,12 @@ class Main(QMainWindow, Ui_MainWindow):
                 item.setText(str(j) + " " + str(s.progress) + "%: f#" + str(
                     s.actual_i - int(self.lineEdit_start_frame.text())) + "/"
                              + str(int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
-            self.imshow.set_data(rgb2gray(s.frame_n))
-            for r in self.boxes_dict:
-                r.update_from_solver()
-            self.figure.canvas.draw()
-            # plt.show(block=False)
-            # self.figure.canvas.flush_events()
+            if self.checkBox_live_preview.isChecked():
+                self.imshow.set_data(rgb2gray(s.frame_n))
+                for r in self.boxes_dict:
+                    r.update_from_solver()
+                self.figure.canvas.draw()
+                self.figure.canvas.flush_events()
 
     def showResults(self):
         # print(self.solver_list)

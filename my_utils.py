@@ -75,8 +75,7 @@ def plot_results(shift_x, shift_x_y_error, shift_y, fps, res, output_name, plots
 
         if (plots_dict["pos(t)"]):
             plt.figure(num=output_name + 'y(x), um(um)')
-            plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt,
-                         yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
+            plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt)#, yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
             plt.grid()
             plt.title("y(x), #" + str(solver_number) + "")
             plt.xlabel("x, um")
