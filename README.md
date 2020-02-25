@@ -3,7 +3,7 @@ After installing your prefered python env, you'll need some packages :
 
 ```
 conda install pyqt
-pip install imageio-ffmpeg pims pandas
+pip install imageio-ffmpeg pims pandas seaborn
 ```
 
 There is an error with some python env with which we can't use the code as we can't get the length of the video. I don't know what is the problem now.
