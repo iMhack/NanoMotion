@@ -217,7 +217,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
         shape = np.shape(self.videodata.get_frame(0))
         try:
-            self.orignalVideoLen = self.videodata._len  # Gives the right with some python environnements or get inf
+            self.orignalVideoLen = len(self.videodata)  # Gives the right with some python environnements or get inf
         except:
             print("Cant get video length")
         print("Shape of videodata[0] : " + str(shape) + " x " + str(self.orignalVideoLen) + " frames. Obj type " + str(
@@ -366,7 +366,7 @@ class Main(QMainWindow, Ui_MainWindow):
             plot_results(shift_x=solver.shift_x, shift_x_y_error=solver.shift_x_y_error, shift_y=solver.shift_y,
                          fps=solver.fps, res=solver.res,
                          output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
-                         chop_sec=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame)
+                         chop_sec=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
         print("Plots showed")
 
     def export_results(self):

@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from skimage.color import rgb2gray
-from skimage.feature import register_translation
+from skimage.registration import phase_cross_correlation
 from threading import RLock
 import numpy as np
 from decimal import *
@@ -36,9 +36,10 @@ class Solver(QThread):
         self.z_rms = []
         self.v_rms = []
 
-        self.shift_x = [[] for _ in self.box_dict]
-        self.shift_y = [[] for _ in self.box_dict]
-        self.shift_x_y_error = [[] for _ in self.box_dict]
+        self.shift_x = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
+        self.shift_y = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
+        self.shift_p = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
+        self.shift_x_y_error = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.box_shift = [[0 for _ in range(2)] for _ in self.box_dict]
         self.frame_n = self.videodata.get_frame(start_frame)
         self.progress = 0
@@ -80,22 +81,23 @@ class Solver(QThread):
                 for j in range(len(self.box_dict)):  # j runs on all the boxes
                     image_n = (self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]])
                     # t = time_logging.end("Load frame", t)
-                    shift, error, diffphase = register_translation(image_n, image_1[j], self.my_upsample_factor)
+                    shift, error, diffphase = phase_cross_correlation(image_n, image_1[j], upsample_factor=self.my_upsample_factor)
                     if not self.compare_first:  # We store the actual as the futur old one
                         image_1[j] = image_n
                         if not i == self.start_frame:
                             #print('Before reshift'+str(shift[1])+'and box_shift is '+str(self.box_shift[j][0]))
                             shift[1] = self.shift_x[j][-1] + shift[1]-self.box_shift[j][0]  # This had to be done to have the same output
                             shift[0] = -self.shift_y[j][-1] + shift[0]-self.box_shift[j][1]
+                            diffphase = diffphase #Well, i don't know
                             #print('After reshift'+str(shift[1])) # We changed the original frame at each new box mvt.
                             # So it was OK to check the value of shift to see if this box had to be moved again. As
                             # we change the frame every time, it have to be done differently.
 
                     # t = time_logging.end("Compute register_translation", t)
-
-                    self.shift_x[j].append(shift[1] + self.box_shift[j][0])
-                    self.shift_y[j].append(-shift[0] - self.box_shift[j][1])
-                    self.shift_x_y_error[j].append(error)
+                    self.shift_x[j][i-self.start_frame] = (shift[1] + self.box_shift[j][0])
+                    self.shift_y[j][i-self.start_frame] = (-shift[0] - self.box_shift[j][1])
+                    self.shift_p[j][i-self.start_frame] = (diffphase)
+                    self.shift_x_y_error[j][i] = (error)
                     if self.track and (abs(shift[1]) >= 1 or abs(shift[0]) >= 1):
                         #print('Moving box ! ' + str(shift[1]) + 'x, ' + str(shift[0]) + 'y !!!')
                         #print('Old box position was ' + str(
