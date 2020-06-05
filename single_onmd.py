@@ -214,6 +214,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
         except:
             self.videodata = pims.Video(self.fileName)
+            print(self.videodata)
 
         shape = np.shape(self.videodata.get_frame(0))
         try:
