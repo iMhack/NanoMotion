@@ -1,4 +1,3 @@
-print("Beginning of the code")
 from configparser import ConfigParser
 import sys
 import os
@@ -6,13 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
-import matplotlib.animation as animation
 import pims
 from skimage.color import rgb2gray
 import os.path
 from threading import RLock
 
-verrou = RLock()
 from PyQt5.QtWidgets import (QApplication, QFileDialog)
 from PyQt5.uic import loadUiType
 from PyQt5.QtCore import QTimer
@@ -21,12 +18,15 @@ from matplotlib.backends.backend_qt5agg import (
     NavigationToolbar2QT as NavigationToolbar)
 from PyQt5 import QtWidgets
 
-# To maintain the tips on editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
-Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
-from mainMenu import (Ui_MainWindow)  # This is used only to have the tips on editing.
 from dragRectangle import DraggableRectangle
 from solver import Solver
 from my_utils import create_dirs, export_results, plot_results
+
+print("Beginning of the code.")
+
+verrou = RLock()
+# To maintain the tips on editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
+Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
 
 config = ConfigParser()
 config.read('settings.ini')
@@ -90,9 +90,16 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionAdd_box = QtWidgets.QAction()
         self.actionAdd_box.setObjectName('actionAdd_box')
         self.menubar.addAction(self.actionAdd_box)
-        self.actionAdd_box.setText('Add analyse box')
+        self.actionAdd_box.setText('Add analysis box')
         self.actionAdd_box.triggered.connect(self.addDraggableRectangle)
         self.actionAdd_box.setShortcut("A")
+
+        self.actionRemove_box = QtWidgets.QAction()
+        self.actionRemove_box.setObjectName('actionRemove_box')
+        self.menubar.addAction(self.actionRemove_box)
+        self.actionRemove_box.setText('Remove analysis box')
+        self.actionRemove_box.triggered.connect(self.removeDraggableRectangle)
+        self.actionRemove_box.setShortcut("R")
 
         self.actionStart_solver = QtWidgets.QAction()
         self.actionStart_solver.setObjectName('actionStart_solver')
@@ -202,34 +209,34 @@ class Main(QMainWindow, Ui_MainWindow):
         self.mplvl.removeWidget(self.toolbar)
         self.toolbar.close()
 
-    def loadAndShowFile(self):  # TODO change name to refer at what this method does
-        # print("showFile()")
+    def loadAndShowFile(self):  # TODO: change name to refer at what this method does
         try:
             self.removeFile()
-        except:
+        except AttributeError:
             print("Nothing to clear")
 
         try:
             self.videodata = pims.ImageSequence(self.fileName)
-
-        except:
+        except Exception:
             self.videodata = pims.Video(self.fileName)
             print(self.videodata)
 
         shape = np.shape(self.videodata.get_frame(0))
         try:
             self.orignalVideoLen = len(self.videodata)  # Gives the right with some python environnements or get inf
-        except:
-            print("Cant get video length")
-        print("Shape of videodata[0] : " + str(shape) + " x " + str(self.orignalVideoLen) + " frames. Obj type " + str(
-            type(self.videodata)))
+        except Exception:
+            print("Can't get video length.")
+
+        print("Shape of videodata[0]: %s x %d frames. Object type: %s." % (shape, self.orignalVideoLen, type(self.videodata)))
+
         self.figure = Figure()
         sub = self.figure.add_subplot(111)
         try:
             self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))),
                                      cmap='gray')
-        except:
+        except Exception:
             self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(0)), cmap='gray')
+
         self.basename = os.path.basename(self.fileName)
         self.views.addItem(self.basename)
         self.canvas = FigureCanvas(self.figure)
@@ -240,9 +247,9 @@ class Main(QMainWindow, Ui_MainWindow):
         self.addToolBar(self.toolbar)
         self.stopFrame()  # Check new boundary
 
-    def substract(self):  # TODO edit it to work with boundaries we set
+    def substract(self):  # TODO: edit it to work with boundaries we set
         if self.checkBox_substract.isChecked():
-            print("substract")
+            print("Enabled substract.")
             try:
                 start_frame = int(self.lineEdit_start_frame.text())
                 stop_frame = int(self.lineEdit_stop_frame.text())
@@ -259,40 +266,67 @@ class Main(QMainWindow, Ui_MainWindow):
                 print("upto set_cmap")
                 self.imshow.set_cmap(self.comboBox_substract_col.currentText())
                 self.figure.canvas.draw()
-            except:
-                print("Wasn't able to substract")
-
+            except Exception:
+                print("Unable to enable substract.")
         else:
             try:
-                print("un-substract")
+                print("Disabled substract.")
                 self.startFrame()
                 self.imshow.set_cmap('gray')
                 self.figure.canvas.draw()
-            except:
-                print("Unable to un-substract")
+            except Exception:
+                print("Unable to disable substract.")
 
     def addDraggableRectangle(self):
-        # print("\naddDraggableRectangle()")
+        if self.cursor is None:  # no file opened, return gracefully
+            return
+
         w = int(self.lineEdit_w.text())
         h = int(self.lineEdit_h.text())
+
         if self.cursor[0] is not None and self.cursor[1] is not None:
             x0 = self.cursor[0] - w / 2
             y0 = self.cursor[1] - h / 2
         else:
-            x0 = 15
-            y0 = 15
+            x0 = w / 2 + 15
+            y0 = h / 2 + 15
         length = len(self.boxes_dict)
-        print("Adding box " + str(length) + " to figure")
+        print("Adding box %d to figure." % (length))
 
         ax = self.figure.add_subplot(111)
-        rect = patches.Rectangle(xy=(x0, y0), width=w, height=h, linewidth=1, edgecolor='r', facecolor='b',
-                                 fill=False)
+
+        rect = patches.Rectangle(xy=(x0, y0), width=w, height=h, linewidth=1, edgecolor='r', facecolor='b', fill=False)
         ax.add_patch(rect)
+
         text = ax.text(x=x0, y=y0, s=str(length))
         dr = DraggableRectangle(rect, rectangle_number=length, text=text)
         dr.connect()
+
         self.boxes_dict.append(dr)
         self.boxes.addItem(str(length))
+
+    def removeDraggableRectangle(self):
+        length = len(self.boxes_dict)
+        if length <= 0:  # no box present, return gracefully
+            return
+
+        current = self.boxes.currentRow()
+        if current == -1:  # no box selected (-1), delete the last one (length - 1)
+            current = length - 1
+
+        print("Removing box %d from figure." % (current))
+
+        rectangle = self.boxes_dict[current]
+        rectangle.disconnect()
+        rectangle.text.remove()
+
+        self.boxes_dict.pop(current)
+        self.boxes.takeItem(current)
+
+        self.figure.axes[0].patches[current].remove()
+        self.figure.texts[current].remove()
+
+        self.figure.canvas.draw()
 
     def saveParameters(self):
         config.set('section_a', 'pix_size', self.lineEdit_pix_size.text())
