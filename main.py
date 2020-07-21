@@ -209,21 +209,26 @@ class Main(QMainWindow, Ui_MainWindow):
         self.mplvl.removeWidget(self.toolbar)
         self.toolbar.close()
 
-    def loadAndShowFile(self):  # TODO: change name to refer at what this method does
+    def loadAndShowFile(self):  # TODO: change name to refer to what this method does
+        try:
+            self.videodata = pims.ImageSequence(self.fileName)
+        except Exception:
+            try:
+                self.videodata = pims.Video(self.fileName)
+            except Exception:
+                print("Failed to load file/folder.")
+                return
+
         try:
             self.removeFile()
         except AttributeError:
             print("Nothing to clear")
 
-        try:
-            self.videodata = pims.ImageSequence(self.fileName)
-        except Exception:
-            self.videodata = pims.Video(self.fileName)
-            print(self.videodata)
+        print(self.videodata)
 
         shape = np.shape(self.videodata.get_frame(0))
         try:
-            self.orignalVideoLen = len(self.videodata)  # Gives the right with some python environnements or get inf
+            self.orignalVideoLen = len(self.videodata)  # try to get the video length (can vary depending on the Python environment)
         except Exception:
             print("Can't get video length.")
 

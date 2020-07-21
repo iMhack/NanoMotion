@@ -344,7 +344,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "LPVM-NanoMotionAnalysis"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "LPMV-NanoMotionAnalysis"))
         self.label_pix_size.setText(_translate("MainWindow", "Pixel size μm"))
         self.lineEdit_pix_size.setToolTip(_translate("MainWindow", "Sensor pixel size"))
         self.lineEdit_pix_size.setText(_translate("MainWindow", "1.12"))
