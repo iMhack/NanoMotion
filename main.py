@@ -371,7 +371,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.output_name = create_dirs(self.fileName, "")
         solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
                         box_dict=self.boxes_dict, solver_number=0,
-                        my_upsample_factor=int(self.lineEdit_sub_pix.text()),
+                        upsample_factor=int(self.lineEdit_sub_pix.text()),
                         stop_frame=int(self.lineEdit_stop_frame.text()),
                         start_frame=int(self.lineEdit_start_frame.text()),
                         res=float(self.lineEdit_pix_size.text()),
@@ -402,7 +402,7 @@ class Main(QMainWindow, Ui_MainWindow):
             for j in range(len(self.boxes_dict)):
                 item = self.boxes.item(j)
                 item.setText("%d - %d%% (frame %d/%d)"
-                             % (j, s.progress, s.actual_i - int(self.lineEdit_start_frame.text()), int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
+                             % (j, s.progress, s.current_i - int(self.lineEdit_start_frame.text()), int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
             if self.checkBox_live_preview.isChecked():
                 self.imshow.set_data(rgb2gray(s.frame_n))
                 for r in self.boxes_dict:

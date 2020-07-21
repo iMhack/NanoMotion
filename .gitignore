@@ -1,2 +1,4 @@
 # Project exclude paths
 /venv/
+/results/
+/__pycache__/
