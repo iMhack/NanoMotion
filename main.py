@@ -25,7 +25,7 @@ from my_utils import create_dirs, export_results, plot_results
 print("Beginning of the code.")
 
 verrou = RLock()
-# To maintain the tips on editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
+# To keep the tips when editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
 
 config = ConfigParser()
@@ -38,8 +38,8 @@ class Main(QMainWindow, Ui_MainWindow):
         super(Main, self).__init__()
         self.setupUi(self)
         self.figure = None
-        self.boxes_dict = []  # List of boxes to analyse
-        self.plots_dict = {}  # List of plots to plot
+        self.boxes_dict = []  # list of boxes to analyse
+        self.plots_dict = {}  # list of plots to plot
         self.output_name = []
         self.solver_list = []
         self.basename = None
@@ -127,7 +127,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.videodata = None
 
         self.cursor = None
-        self.plotSelection()  # Set options to the bools wanted even if the user didn't change anything
+        self.plotSelection()  # set options to the bools wanted even if the user didn't change anything
 
     def startFrame(self, update=True):
         if self.orignalVideoLen != float('inf'):
@@ -140,8 +140,8 @@ class Main(QMainWindow, Ui_MainWindow):
                         self.figure.canvas.draw()
                         self.figure.canvas.flush_events()
                     return self.videodata.get_frame(int(self.lineEdit_start_frame.text()))
-                except:
-                    print("Tried to change the 1st frame to show. FAILED")
+                except Exception:
+                    print("Failed to show the first frame.")  # TODO: print appropriate text
                     return 0
         else:
             return 0
@@ -153,8 +153,8 @@ class Main(QMainWindow, Ui_MainWindow):
             if self.fileName != "":
                 try:
                     return self.videodata.get_frame(int(self.lineEdit_stop_frame.text()))
-                except:
-                    print("Tried to load the last frame. FAILED")
+                except Exception:
+                    print("Failed to load the last frame.")
                     return 0
             else:
                 return 0
@@ -172,7 +172,7 @@ class Main(QMainWindow, Ui_MainWindow):
             e.ignore()
 
     def dropEvent(self, e):
-        print("Drop event")
+        print("Event dropped.")
         if e.mimeData().hasUrls:
             for url in e.mimeData().urls():
                 fname = str(url.toLocalFile())
@@ -187,7 +187,7 @@ class Main(QMainWindow, Ui_MainWindow):
     def plotSelection(self):
         for action in self.menuView_plot.actions():
             self.plots_dict[action.text()] = action.isChecked()
-            print("menuView is " + action.text() + " " + str(action.isChecked()))
+            print("Menu option '%s': %s." % (action.text, action.isChecked()))
         self.lineEdit_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
         self.label_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
 
@@ -222,7 +222,7 @@ class Main(QMainWindow, Ui_MainWindow):
         try:
             self.removeFile()
         except AttributeError:
-            print("Nothing to clear")
+            print("Nothing to clear.")
 
         print(self.videodata)
 
@@ -355,9 +355,14 @@ class Main(QMainWindow, Ui_MainWindow):
         config.set('section_a', 'checkBox_compare_first', str(self.checkBox_compare_first.isChecked()))
         with open('settings.ini', 'w') as configfile:
             config.write(configfile)
-        print('Parameters saved')
+        print('Parameters saved.')
 
     def startAnalysis(self):
+        self.stopAnalysis()  # ensure no analysis is already running
+
+        if self.videodata is None:  # no video loaded, return gracefully
+            return
+
         self.solver_list.clear()
         self.saveParameters()
         self.output_name = create_dirs(self.fileName, "")
@@ -376,13 +381,16 @@ class Main(QMainWindow, Ui_MainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateProgress)
         self.timer.start(100)
-        print('timer started etc')
+        print('Started timer.')
 
     def stopAnalysis(self):
-        print("STOPPING ANALYSIS")
-        self.timer.stop()
-        for solver in self.solver_list:
-            solver.stop()
+        try:
+            print("Analysis stopped.")
+            self.timer.stop()
+            for solver in self.solver_list:
+                solver.stop()
+        except Exception:  # no timer launched, return gracefully
+            pass
 
     def updateProgress(self):
         for s in self.solver_list:
@@ -407,7 +415,7 @@ class Main(QMainWindow, Ui_MainWindow):
                          fps=solver.fps, res=solver.res,
                          output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
                          chop_sec=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
-        print("Plots showed")
+        print("Plots shown.")
 
     def export_results(self):
         for solver in self.solver_list:
@@ -418,11 +426,11 @@ class Main(QMainWindow, Ui_MainWindow):
                                dz_rms=solver.z_rms[j],
                                v=solver.v_rms[j],
                                output_name=self.output_name + str(j))
-        print("Files exported")
+        print("Files exported.")
 
 
 if __name__ == '__main__':
-    print("Interpreter location is : " + os.path.dirname(sys.executable))
+    print("Python interpreter: %s." % (os.path.dirname(sys.executable)))
     sys.stdout.flush()
     app = QApplication(sys.argv)
     menu = Main()
