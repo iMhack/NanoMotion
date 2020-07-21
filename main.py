@@ -51,17 +51,20 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionSubstract.triggered.connect(self.substract)
         # self.actionSubstract.setDisabled(True)
         self.actionAdd_box.triggered.connect(self.addDraggableRectangle)
-        self.actionViolin.triggered.connect(self.plotSelection)
-        self.actionPos.triggered.connect(self.plotSelection)
-        self.actiony_shift.triggered.connect(self.plotSelection)
         self.actionx_shift.triggered.connect(self.plotSelection)
+        self.actiony_shift.triggered.connect(self.plotSelection)
+        self.actionPos.triggered.connect(self.plotSelection)
+        self.actionPhase.triggered.connect(self.plotSelection)
+        self.actionViolin.triggered.connect(self.plotSelection)
         self.actionViolin_all_on_one.triggered.connect(self.plotSelection)
         self.actionViolin_chop.triggered.connect(self.plotSelection)
         # self.actionStart_analysis.triggered.connect(self.startAnalysis)
         # self.actionShow_results.triggered.connect(self.showResults)
+
         self.actionx_shift.setChecked(bool(config.getboolean('section_b', 'actionx_shift')))
         self.actiony_shift.setChecked(bool(config.getboolean('section_b', 'actiony_shift')))
         self.actionPos.setChecked(bool(config.getboolean('section_b', 'actionpos')))
+        self.actionPhase.setChecked(bool(config.getboolean('section_b', 'actionphase')))
         self.actionViolin.setChecked(bool(config.getboolean('section_b', 'actionviolin')))
         self.actionViolin_all_on_one.setChecked(bool(config.getboolean('section_b', 'actionviolin_all_on_one')))
         self.actionViolin_chop.setChecked(bool(config.getboolean('section_b', 'actionviolin_chop')))
@@ -187,7 +190,7 @@ class Main(QMainWindow, Ui_MainWindow):
     def plotSelection(self):
         for action in self.menuView_plot.actions():
             self.plots_dict[action.text()] = action.isChecked()
-            print("Menu option '%s': %s." % (action.text, action.isChecked()))
+            print("Menu option '%s': %s." % (action.text(), action.isChecked()))
         self.lineEdit_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
         self.label_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
 
@@ -268,7 +271,6 @@ class Main(QMainWindow, Ui_MainWindow):
                     cumulative_frame += rgb2gray(self.videodata.get_frame(i)) - first_frame
 
                 self.imshow.set_data(rgb2gray(cumulative_frame))
-                print("upto set_cmap")
                 self.imshow.set_cmap(self.comboBox_substract_col.currentText())
                 self.figure.canvas.draw()
             except Exception:
@@ -348,6 +350,7 @@ class Main(QMainWindow, Ui_MainWindow):
         config.set('section_b', 'actionx_shift', str(self.actionx_shift.isChecked()))
         config.set('section_b', 'actiony_shift', str(self.actiony_shift.isChecked()))
         config.set('section_b', 'actionpos', str(self.actionPos.isChecked()))
+        config.set('section_b', 'actionphase', str(self.actionPhase.isChecked()))
         config.set('section_b', 'actionviolin', str(self.actionViolin.isChecked()))
         config.set('section_b', 'actionviolin_all_on_one', str(self.actionViolin.isChecked()))
         config.set('section_b', 'actionviolin_chop', str(self.actionViolin_chop.isChecked()))
@@ -381,7 +384,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateProgress)
         self.timer.start(100)
-        print('Started timer.')
+        print("Started timer.")
 
     def stopAnalysis(self):
         try:
@@ -398,9 +401,8 @@ class Main(QMainWindow, Ui_MainWindow):
                 self.timer.stop()
             for j in range(len(self.boxes_dict)):
                 item = self.boxes.item(j)
-                item.setText(str(j) + " " + str(s.progress) + "%: f#" + str(
-                    s.actual_i - int(self.lineEdit_start_frame.text())) + "/"
-                             + str(int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
+                item.setText("%d - %d%% (frame %d/%d)"
+                             % (j, s.progress, s.actual_i - int(self.lineEdit_start_frame.text()), int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
             if self.checkBox_live_preview.isChecked():
                 self.imshow.set_data(rgb2gray(s.frame_n))
                 for r in self.boxes_dict:

@@ -60,7 +60,7 @@ class Solver(QThread):
         print("Solver thread has been flagged to stop.")
 
     def _calcul_phase_corr(self):
-        print("self.go_on is set to " + str(self.go_on))
+        print("self.go_on is set to %s." % (self.go_on))
         # calculate cross correlation for all frames for the selected  polygon crop
         import time_logging
         # print("row min row max col min col max" + str([self.row_min,self.row_max, self.col_min,self.col_max]))
@@ -70,8 +70,7 @@ class Solver(QThread):
         for j in range(len(self.box_dict)):
             image_1.append(rgb2gray(
                 frame_1[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]))
-            print('Box position started ' + str(
-                (self.row_min[j], self.row_max[j], self.col_min[j], self.col_max[j])) + '.')
+            print("Box %d (%d, %d, %d, %d)." % (j, self.row_min[j], self.row_max[j], self.col_min[j], self.col_max[j]))
         # print(image_1.shape)
         lenght = self.stop_frame - self.start_frame
         # t = time_logging.start()
@@ -92,7 +91,7 @@ class Solver(QThread):
                             # print('Before reshift'+str(shift[1])+'and box_shift is '+str(self.box_shift[j][0]))
                             shift[1] = self.shift_x[j][-1] + shift[1]-self.box_shift[j][0]  # This had to be done to have the same output
                             shift[0] = -self.shift_y[j][-1] + shift[0]-self.box_shift[j][1]
-                            diffphase = diffphase #Well, i don't know
+                            diffphase = diffphase  # well, i don't know
                             # print('After reshift'+str(shift[1])) # We changed the original frame at each new box mvt.
                             # So it was OK to check the value of shift to see if this box had to be moved again. As
                             # we change the frame every time, it have to be done differently.
@@ -121,8 +120,7 @@ class Solver(QThread):
                 # self.progressChanged.emit(self.progress, i, )
                 if self.progress > progress_pivot + 4:
                     # self.progressChanged.emit(self.progress, i, self.frame_n)
-                    print(str(self.progress) + "%: analyse frame " + str(i - self.start_frame) + "/" + str(
-                        self.stop_frame - self.start_frame))
+                    print("%d%% (frame %d/%d)." % (self.progress, i - self.start_frame, self.stop_frame - self.start_frame))
                     progress_pivot = self.progress
                     # print(time_logging.text_statistics())
                 # print(self.shift_x)
