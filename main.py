@@ -32,6 +32,7 @@ class Main(QMainWindow, Ui_MainWindow):
         super(Main, self).__init__()
         self.setupUi(self)
         self.figure = None
+        self.saved_boxes = {}
         self.boxes_dict = []  # list of boxes to analyse
         self.plots_dict = {}  # list of plots to plot
         self.output_name = []
@@ -216,7 +217,10 @@ class Main(QMainWindow, Ui_MainWindow):
         self.canvas.draw()
         self.toolbar = NavigationToolbar(self.canvas, self, coordinates=True)
         self.addToolBar(self.toolbar)
-        self.stopFrame()  # Check new boundary
+        self.stopFrame()  # check new boundaries
+
+        for box in self.saved_boxes.values():
+            self._addRectangle(box["number"], box["x0"], box["y0"], box["width"], box["height"])
 
     def substract(self):  # TODO: edit it to work with boundaries we set
         if self.checkBox_substract.isChecked():
@@ -251,29 +255,42 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.cursor is None:  # no file opened, return gracefully
             return
 
-        w = int(self.lineEdit_w.text())
-        h = int(self.lineEdit_h.text())
+        width = int(self.lineEdit_w.text())
+        height = int(self.lineEdit_h.text())
 
         if self.cursor[0] is not None and self.cursor[1] is not None:
-            x0 = self.cursor[0] - w / 2
-            y0 = self.cursor[1] - h / 2
+            x0 = self.cursor[0] - width / 2
+            y0 = self.cursor[1] - height / 2
         else:
-            x0 = w / 2 + 15
-            y0 = h / 2 + 15
-        length = len(self.boxes_dict)
-        print("Adding box %d to figure." % (length))
+            x0 = width / 2 + 15
+            y0 = height / 2 + 15
+
+        number = len(self.boxes_dict)
+
+        self._addRectangle(number, x0, y0, width, height)
+
+        self.saved_boxes[number] = {
+            "number": number,
+            "x0": x0,
+            "y0": y0,
+            "width": width,
+            "height": height
+        }
+
+    def _addRectangle(self, number, x0, y0, width, height):
+        print("Adding box %d to figure." % (number))
 
         ax = self.figure.add_subplot(111)
 
-        rect = patches.Rectangle(xy=(x0, y0), width=w, height=h, linewidth=1, edgecolor='r', facecolor='b', fill=False)
+        rect = patches.Rectangle(xy=(x0, y0), width=width, height=height, linewidth=1, edgecolor='r', facecolor='b', fill=False)
         ax.add_patch(rect)
 
-        text = ax.text(x=x0, y=y0, s=str(length))
-        dr = DraggableRectangle(rect, rectangle_number=length, text=text)
+        text = ax.text(x=x0, y=y0, s=str(number))
+        dr = DraggableRectangle(rect, rectangle_number=number, text=text)
         dr.connect()
 
         self.boxes_dict.append(dr)
-        self.boxes.addItem(str(length))
+        self.boxes.addItem(str(number))
 
     def removeDraggableRectangle(self):
         length = len(self.boxes_dict)
@@ -297,6 +314,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.figure.texts[current].remove()
 
         self.figure.canvas.draw()
+
+        self.saved_boxes.pop(str(current))
 
     def loadParameters(self):
         with open('settings.json', 'r') as json_file:
@@ -336,6 +355,8 @@ class Main(QMainWindow, Ui_MainWindow):
             self.actionViolin_all_on_one.setChecked(json_data["actions"]["violin_all_on_one"])
             self.actionViolin_chop.setChecked(json_data["actions"]["violin_chop"])
 
+            self.saved_boxes = json_data["boxes"]
+
             print("Parameters loaded.")
 
     def saveParameters(self):
@@ -366,7 +387,8 @@ class Main(QMainWindow, Ui_MainWindow):
                              "violin": self.actionViolin.isChecked(),
                              "violin_all_on_one": self.actionViolin_all_on_one.isChecked(),
                              "violin_chop": self.actionViolin_chop.isChecked()
-                         }
+                         },
+                         "boxes": self.saved_boxes
             }
 
             json.dump(json_data, json_file, indent=4)

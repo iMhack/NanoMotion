@@ -131,7 +131,6 @@ class Solver(QThread):
                         self.shift_x_y_error[j][i] = error
 
                         if not self.compare_first or abs(shift[0]) >= 0.045:  # TODO: remove 0.045 factor (noise)
-                            print(".")
                             self.cumulated_shift[j][0] += shift[0]
 
                         if not self.compare_first or abs(shift[1]) >= 0.045:  # TODO: remove 0.045 factor (noise)
