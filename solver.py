@@ -105,6 +105,7 @@ class Solver(QThread):
                         shift, error, diffphase = phase_cross_correlation(image_n, images[j], upsample_factor=self.upsample_factor)
                         shift[0], shift[1] = shift[1], shift[0]  # swap (y, x) → (x, y)
 
+                        # TODO: fix tracking
                         if self.compare_first:
                             if jump[j]:  # TODO: improve jump override
                                 jump[j] = False
@@ -125,17 +126,18 @@ class Solver(QThread):
                         else:
                             self.shift_x[j][i] = self.shift_x[j][i - 1] + shift[0]
                             self.shift_y[j][i] = self.shift_y[j][i - 1] + shift[1]
-                            self.shift_p[j][i] = diffphase
+                            self.shift_p[j][i] = self.shift_p[j][i - 1] + diffphase
 
                         self.shift_x_y_error[j][i] = error
 
                         if not self.compare_first or abs(shift[0]) >= 0.045:  # TODO: remove 0.045 factor (noise)
+                            print(".")
                             self.cumulated_shift[j][0] += shift[0]
 
                         if not self.compare_first or abs(shift[1]) >= 0.045:  # TODO: remove 0.045 factor (noise)
                             self.cumulated_shift[j][1] += shift[1]
 
-                        # print("Shift: (%f, %f), cumulated: (%f, %f)." % (shift[0], shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
+                        print("Shift: (%f, %f), cumulated: (%f, %f)." % (shift[0], shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
 
                         to_shift_x = 0
                         to_shift_y = 0

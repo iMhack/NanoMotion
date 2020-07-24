@@ -1,0 +1,28 @@
+{
+    "parameters": {
+        "pixel_size": 1.67,
+        "magnification": 0,
+        "sub_pixel": 200,
+        "fps": 28,
+        "start_frame": 0,
+        "stop_frame": 500,
+        "box_width": 60,
+        "box_height": 60,
+        "tracking": true,
+        "compare_to_first": false,
+        "chop_sec": 5
+    },
+    "extra": {
+        "substract_type": "Accent",
+        "substract_level": 4
+    },
+    "actions": {
+        "x_shift": true,
+        "y_shift": true,
+        "position": true,
+        "phase": true,
+        "violin": false,
+        "violin_all_on_one": false,
+        "violin_chop": false
+    }
+}

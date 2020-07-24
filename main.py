@@ -8,7 +8,7 @@ import matplotlib.patches as patches
 import pims
 from skimage.color import rgb2gray
 import os.path
-from threading import RLock
+import json
 
 from PyQt5.QtWidgets import (QApplication, QFileDialog)
 from PyQt5.uic import loadUiType
@@ -24,15 +24,9 @@ from my_utils import create_dirs, export_results, plot_results
 
 print("Beginning of the code.")
 
-verrou = RLock()
 # To keep the tips when editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
 
-config = ConfigParser()
-config.read('settings.ini')
-
-
-# TODO Export the error too !
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
         super(Main, self).__init__()
@@ -46,8 +40,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.orignalVideoLen = 0
         self.timer = 0
 
-        self.actionOpen.triggered.connect(self.browse_file)
-        self.actionExport_results.triggered.connect(self.export_results)
+        self.actionOpen.triggered.connect(self.browseFiles)
+        self.actionExport_results.triggered.connect(self.exportResults)
         self.actionSubstract.triggered.connect(self.substract)
         # self.actionSubstract.setDisabled(True)
         self.actionAdd_box.triggered.connect(self.addDraggableRectangle)
@@ -58,37 +52,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionViolin.triggered.connect(self.plotSelection)
         self.actionViolin_all_on_one.triggered.connect(self.plotSelection)
         self.actionViolin_chop.triggered.connect(self.plotSelection)
-        # self.actionStart_analysis.triggered.connect(self.startAnalysis)
-        # self.actionShow_results.triggered.connect(self.showResults)
-
-        self.actionx_shift.setChecked(bool(config.getboolean('section_b', 'actionx_shift')))
-        self.actiony_shift.setChecked(bool(config.getboolean('section_b', 'actiony_shift')))
-        self.actionPos.setChecked(bool(config.getboolean('section_b', 'actionpos')))
-        self.actionPhase.setChecked(bool(config.getboolean('section_b', 'actionphase')))
-        self.actionViolin.setChecked(bool(config.getboolean('section_b', 'actionviolin')))
-        self.actionViolin_all_on_one.setChecked(bool(config.getboolean('section_b', 'actionviolin_all_on_one')))
-        self.actionViolin_chop.setChecked(bool(config.getboolean('section_b', 'actionviolin_chop')))
-        self.checkBox_track.setChecked(bool(config.getboolean('section_a', 'checkBox_track')))
-        self.checkBox_compare_first.setChecked(bool(config.getboolean('section_a', 'checkBox_compare_first')))
-
-        self.lineEdit_pix_size.setText(config.get('section_a', 'pix_size'))
-        self.lineEdit_magn.setText(config.get('section_a', 'magn'))
-        self.lineEdit_sub_pix.setText(config.get('section_a', 'sub_pix'))
-        self.lineEdit_fps.setText(config.get('section_a', 'fps'))
-        self.lineEdit_start_frame.setText(config.get('section_a', 'start_frame'))
-        self.lineEdit_start_frame.editingFinished.connect(self.startFrame)
-        self.lineEdit_stop_frame.setText(config.get('section_a', 'stop_frame'))
-        self.lineEdit_stop_frame.editingFinished.connect(self.stopFrame)
-        self.lineEdit_w.setText(config.get('section_a', 'w'))
-        self.lineEdit_h.setText(config.get('section_a', 'h'))
-        self.checkBox_substract.stateChanged.connect(self.substract)
-        self.lineEdit_substract_lvl.editingFinished.connect(self.substract)
-        for i in plt.colormaps():
-            self.comboBox_substract_col.addItem(i)
-        self.comboBox_substract_col.setCurrentText(config.get('section_b', 'substract_col'))
-        self.lineEdit_substract_lvl.setText(config.get('section_b', 'substract_lvl'))
-        self.comboBox_substract_col.currentIndexChanged.connect(self.substract)
-        self.lineEdit_chop_sec.setText(config.get('section_b', 'chop_sec'))
 
         self.actionAdd_box = QtWidgets.QAction()
         self.actionAdd_box.setObjectName('actionAdd_box')
@@ -124,13 +87,13 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionStop_solver.setText('Stop Analysis')
         self.actionStop_solver.triggered.connect(self.stopAnalysis)
 
+        self.loadParameters()
+
         self.fileName = ""
-        self.cell_n = ""
-        self.polyg_size = 40
         self.videodata = None
 
         self.cursor = None
-        self.plotSelection()  # set options to the bools wanted even if the user didn't change anything
+        self.plotSelection()  # set options to the booleans wanted even if the user didn't change anything
 
     def startFrame(self, update=True):
         if self.orignalVideoLen != float('inf'):
@@ -194,13 +157,13 @@ class Main(QMainWindow, Ui_MainWindow):
         self.lineEdit_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
         self.label_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
 
-    def browse_file(self):
+    def browseFiles(self):
         self.fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                        "All Files (*);;mp4 movie (*.mp4)")
         self.goodFile = 1
         self.loadAndShowFile()
 
-    def removeFile(self):
+    def unloadFile(self):
         self.views.clear()
         self.boxes.clear()
         for box in self.boxes_dict:
@@ -212,7 +175,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.mplvl.removeWidget(self.toolbar)
         self.toolbar.close()
 
-    def loadAndShowFile(self):  # TODO: change name to refer to what this method does
+    def loadAndShowFile(self):
         try:
             self.videodata = pims.ImageSequence(self.fileName)
         except Exception:
@@ -223,7 +186,7 @@ class Main(QMainWindow, Ui_MainWindow):
                 return
 
         try:
-            self.removeFile()
+            self.unloadFile()
         except AttributeError:
             print("Nothing to clear.")
 
@@ -335,30 +298,80 @@ class Main(QMainWindow, Ui_MainWindow):
 
         self.figure.canvas.draw()
 
+    def loadParameters(self):
+        with open('settings.json', 'r') as json_file:
+            json_data = json.load(json_file)
+
+            self.lineEdit_pix_size.setText(str(json_data["parameters"]["pixel_size"]))
+            self.lineEdit_magn.setText(str(json_data["parameters"]["magnification"]))
+            self.lineEdit_sub_pix.setText(str(json_data["parameters"]["sub_pixel"]))
+            self.lineEdit_fps.setText(str(json_data["parameters"]["fps"]))
+            self.lineEdit_start_frame.setText(str(json_data["parameters"]["start_frame"]))
+            self.lineEdit_stop_frame.setText(str(json_data["parameters"]["stop_frame"]))
+            # TODO: is it better when disabled?
+            # self.lineEdit_start_frame.editingFinished.connect(self.startFrame)
+            # self.lineEdit_stop_frame.editingFinished.connect(self.stopFrame)
+            self.lineEdit_w.setText(str(json_data["parameters"]["box_width"]))
+            self.lineEdit_h.setText(str(json_data["parameters"]["box_height"]))
+            self.checkBox_track.setChecked(json_data["parameters"]["tracking"])
+            self.checkBox_compare_first.setChecked(json_data["parameters"]["compare_to_first"])
+            self.lineEdit_chop_sec.setText(str(json_data["parameters"]["chop_sec"]))
+
+            self.comboBox_substract_col.setCurrentText(json_data["extra"]["substract_type"])
+            for i in plt.colormaps():
+                self.comboBox_substract_col.addItem(i)
+
+            self.lineEdit_substract_lvl.setText(str(json_data["extra"]["substract_level"]))
+
+            self.comboBox_substract_col.currentIndexChanged.connect(self.substract)
+            # TODO: save/load substract checkbox
+            self.checkBox_substract.stateChanged.connect(self.substract)
+            self.lineEdit_substract_lvl.editingFinished.connect(self.substract)
+
+            self.actionx_shift.setChecked(json_data["actions"]["x_shift"])
+            self.actiony_shift.setChecked(json_data["actions"]["y_shift"])
+            self.actionPos.setChecked(json_data["actions"]["position"])
+            self.actionPhase.setChecked(json_data["actions"]["phase"])
+            self.actionViolin.setChecked(json_data["actions"]["violin"])
+            self.actionViolin_all_on_one.setChecked(json_data["actions"]["violin_all_on_one"])
+            self.actionViolin_chop.setChecked(json_data["actions"]["violin_chop"])
+
+            print("Parameters loaded.")
+
     def saveParameters(self):
-        config.set('section_a', 'pix_size', self.lineEdit_pix_size.text())
-        config.set('section_a', 'magn', self.lineEdit_magn.text())
-        config.set('section_a', 'sub_pix', self.lineEdit_sub_pix.text())
-        config.set('section_a', 'fps', self.lineEdit_fps.text())
-        config.set('section_a', 'start_frame', self.lineEdit_start_frame.text())
-        config.set('section_a', 'stop_frame', self.lineEdit_stop_frame.text())
-        config.set('section_a', 'w', self.lineEdit_w.text())
-        config.set('section_a', 'h', self.lineEdit_h.text())
-        config.set('section_b', 'substract_col', self.comboBox_substract_col.currentText())
-        config.set('section_b', 'substract_lvl', self.lineEdit_substract_lvl.text())
-        config.set('section_b', 'chop_sec', self.lineEdit_chop_sec.text())
-        config.set('section_b', 'actionx_shift', str(self.actionx_shift.isChecked()))
-        config.set('section_b', 'actiony_shift', str(self.actiony_shift.isChecked()))
-        config.set('section_b', 'actionpos', str(self.actionPos.isChecked()))
-        config.set('section_b', 'actionphase', str(self.actionPhase.isChecked()))
-        config.set('section_b', 'actionviolin', str(self.actionViolin.isChecked()))
-        config.set('section_b', 'actionviolin_all_on_one', str(self.actionViolin.isChecked()))
-        config.set('section_b', 'actionviolin_chop', str(self.actionViolin_chop.isChecked()))
-        config.set('section_a', 'checkBox_track', str(self.checkBox_track.isChecked()))
-        config.set('section_a', 'checkBox_compare_first', str(self.checkBox_compare_first.isChecked()))
-        with open('settings.ini', 'w') as configfile:
-            config.write(configfile)
-        print('Parameters saved.')
+        with open('settings.json', 'w') as json_file:
+            json_data = {
+                         "parameters": {
+                             "pixel_size": float(self.lineEdit_pix_size.text()),
+                             "magnification": int(self.lineEdit_magn.text()),
+                             "sub_pixel": int(self.lineEdit_sub_pix.text()),
+                             "fps": int(self.lineEdit_fps.text()),
+                             "start_frame": int(self.lineEdit_start_frame.text()),
+                             "stop_frame": int(self.lineEdit_stop_frame.text()),
+                             "box_width": int(self.lineEdit_w.text()),
+                             "box_height": int(self.lineEdit_h.text()),
+                             "tracking": self.checkBox_track.isChecked(),
+                             "compare_to_first": self.checkBox_compare_first.isChecked(),
+                             "chop_sec": int(self.lineEdit_chop_sec.text())
+                         },
+                         "extra": {
+                             "substract_type": self.comboBox_substract_col.currentText(),
+                             "substract_level": int(self.lineEdit_substract_lvl.text())
+                         },
+                         "actions": {
+                             "x_shift": self.actionx_shift.isChecked(),
+                             "y_shift": self.actiony_shift.isChecked(),
+                             "position": self.actionPos.isChecked(),
+                             "phase": self.actionPhase.isChecked(),
+                             "violin": self.actionViolin.isChecked(),
+                             "violin_all_on_one": self.actionViolin_all_on_one.isChecked(),
+                             "violin_chop": self.actionViolin_chop.isChecked()
+                         }
+            }
+
+            json.dump(json_data, json_file, indent=4)
+
+            print("Parameters saved.")
 
     def startAnalysis(self):
         self.stopAnalysis()  # ensure no analysis is already running
@@ -369,6 +382,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.solver_list.clear()
         self.saveParameters()
         self.output_name = create_dirs(self.fileName, "")
+        print("Tracking: %s." % (self.checkBox_track.isChecked()))
         solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
                         box_dict=self.boxes_dict, solver_number=0,
                         upsample_factor=int(self.lineEdit_sub_pix.text()),
@@ -419,7 +433,7 @@ class Main(QMainWindow, Ui_MainWindow):
                          chop_sec=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
         print("Plots shown.")
 
-    def export_results(self):
+    def exportResults(self):
         for solver in self.solver_list:
             for j in range(len(solver.box_dict)):
                 export_results(shift_x=solver.shift_x[j], shift_y=solver.shift_y[j], fps=solver.fps, res=solver.res,
