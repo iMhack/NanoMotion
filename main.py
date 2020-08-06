@@ -46,13 +46,13 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionSubstract.triggered.connect(self.substract)
         # self.actionSubstract.setDisabled(True)
         self.actionAdd_box.triggered.connect(self.addDraggableRectangle)
-        self.actionx_shift.triggered.connect(self.plotSelection)
-        self.actiony_shift.triggered.connect(self.plotSelection)
-        self.actionPos.triggered.connect(self.plotSelection)
-        self.actionPhase.triggered.connect(self.plotSelection)
-        self.actionViolin.triggered.connect(self.plotSelection)
-        self.actionViolin_all_on_one.triggered.connect(self.plotSelection)
-        self.actionViolin_chop.triggered.connect(self.plotSelection)
+        self.view_position_x.triggered.connect(self.plotSelection)
+        self.view_position_y.triggered.connect(self.plotSelection)
+        self.view_position.triggered.connect(self.plotSelection)
+        self.view_phase.triggered.connect(self.plotSelection)
+        self.view_violin.triggered.connect(self.plotSelection)
+        self.view_viollin_all_on_one.triggered.connect(self.plotSelection)
+        self.view_violin_chop.triggered.connect(self.plotSelection)
 
         self.actionAdd_box = QtWidgets.QAction()
         self.actionAdd_box.setObjectName('actionAdd_box')
@@ -153,10 +153,10 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def plotSelection(self):
         for action in self.menuView_plot.actions():
-            self.plots_dict[action.text()] = action.isChecked()
-            print("Menu option '%s': %s." % (action.text(), action.isChecked()))
-        self.lineEdit_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
-        self.label_chop_sec.setEnabled(self.actionViolin_chop.isChecked())
+            self.plots_dict[action.objectName()] = action.isChecked()
+            print("Menu option '%s' ('%s') is set to %s." % (action.objectName(), action.text(), action.isChecked()))
+        self.lineEdit_chop_sec.setEnabled(self.view_violin_chop.isChecked())
+        self.label_chop_sec.setEnabled(self.view_violin_chop.isChecked())
 
     def browseFiles(self):
         self.fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
@@ -165,12 +165,18 @@ class Main(QMainWindow, Ui_MainWindow):
         self.loadAndShowFile()
 
     def unloadFile(self):
-        self.views.clear()
-        self.boxes.clear()
-        for box in self.boxes_dict:
+        self.views.clear()  # clear the image
+        self.boxes.clear()  # clear the list of boxes on the right side
+
+        for box in self.boxes_dict:  # remove the boxes
             box.disconnect()
         self.boxes_dict.clear()
+
+        for solver in self.solver_list:  # remove the arrows
+            solver.clear_annotations()
+
         self.basename = None
+
         self.mplvl.removeWidget(self.canvas)
         self.canvas.close()
         self.mplvl.removeWidget(self.toolbar)
@@ -315,7 +321,8 @@ class Main(QMainWindow, Ui_MainWindow):
 
         self.figure.canvas.draw()
 
-        self.saved_boxes.pop(str(current))
+        if str(current) in self.saved_boxes:
+            self.saved_boxes.pop(str(current))
 
     def loadParameters(self):
         with open('settings.json', 'r') as json_file:
@@ -347,13 +354,13 @@ class Main(QMainWindow, Ui_MainWindow):
             self.checkBox_substract.stateChanged.connect(self.substract)
             self.lineEdit_substract_lvl.editingFinished.connect(self.substract)
 
-            self.actionx_shift.setChecked(json_data["actions"]["x_shift"])
-            self.actiony_shift.setChecked(json_data["actions"]["y_shift"])
-            self.actionPos.setChecked(json_data["actions"]["position"])
-            self.actionPhase.setChecked(json_data["actions"]["phase"])
-            self.actionViolin.setChecked(json_data["actions"]["violin"])
-            self.actionViolin_all_on_one.setChecked(json_data["actions"]["violin_all_on_one"])
-            self.actionViolin_chop.setChecked(json_data["actions"]["violin_chop"])
+            self.view_position.setChecked(json_data["actions"]["position"])
+            self.view_position_x.setChecked(json_data["actions"]["position_x"])
+            self.view_position_y.setChecked(json_data["actions"]["position_y"])
+            self.view_phase.setChecked(json_data["actions"]["phase"])
+            self.view_violin.setChecked(json_data["actions"]["violin"])
+            self.view_violin_chop.setChecked(json_data["actions"]["violin_chop"])
+            self.view_viollin_all_on_one.setChecked(json_data["actions"]["violin_all_on_one"])
 
             self.saved_boxes = json_data["boxes"]
 
@@ -380,13 +387,13 @@ class Main(QMainWindow, Ui_MainWindow):
                              "substract_level": int(self.lineEdit_substract_lvl.text())
                          },
                          "actions": {
-                             "x_shift": self.actionx_shift.isChecked(),
-                             "y_shift": self.actiony_shift.isChecked(),
-                             "position": self.actionPos.isChecked(),
-                             "phase": self.actionPhase.isChecked(),
-                             "violin": self.actionViolin.isChecked(),
-                             "violin_all_on_one": self.actionViolin_all_on_one.isChecked(),
-                             "violin_chop": self.actionViolin_chop.isChecked()
+                             "position": self.view_position.isChecked(),
+                             "position_x": self.view_position_x.isChecked(),
+                             "position_y": self.view_position_y.isChecked(),
+                             "phase": self.view_phase.isChecked(),
+                             "violin": self.view_violin.isChecked(),
+                             "violin_chop": self.view_violin_chop.isChecked(),
+                             "violin_all_on_one": self.view_viollin_all_on_one.isChecked()
                          },
                          "boxes": self.saved_boxes
             }
@@ -401,6 +408,9 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.videodata is None:  # no video loaded, return gracefully
             return
 
+        for solver in self.solver_list:  # remove the arrows
+            solver.clear_annotations()
+
         self.solver_list.clear()
         self.saveParameters()
         self.output_name = create_dirs(self.fileName, "")
@@ -411,7 +421,9 @@ class Main(QMainWindow, Ui_MainWindow):
                         stop_frame=int(self.lineEdit_stop_frame.text()),
                         start_frame=int(self.lineEdit_start_frame.text()),
                         res=float(self.lineEdit_pix_size.text()),
-                        track=self.checkBox_track.isChecked(), compare_first=self.checkBox_compare_first.isChecked()
+                        track=self.checkBox_track.isChecked(),
+                        compare_first=self.checkBox_compare_first.isChecked(),
+                        figure=self.figure
                         )
         self.solver_list.append(solver)
         self.solver_list[0].progressChanged.connect(self.updateProgress)
@@ -435,10 +447,12 @@ class Main(QMainWindow, Ui_MainWindow):
         for s in self.solver_list:
             if s.progress == 100:
                 self.timer.stop()
+
             for j in range(len(self.boxes_dict)):
                 item = self.boxes.item(j)
                 item.setText("%d - %d%% (frame %d/%d)"
                              % (j, s.progress, s.current_i - int(self.lineEdit_start_frame.text()), int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
+
             if self.checkBox_live_preview.isChecked():
                 self.imshow.set_data(rgb2gray(s.frame_n))
                 for r in self.boxes_dict:
@@ -447,12 +461,15 @@ class Main(QMainWindow, Ui_MainWindow):
                 self.figure.canvas.flush_events()
 
     def showResults(self):
+        self.saveParameters()
+
         # print(self.solver_list)
         for solver in self.solver_list:
             plot_results(shift_x=solver.shift_x, shift_x_y_error=solver.shift_x_y_error, shift_y=solver.shift_y,
                          fps=solver.fps, res=solver.res,
                          output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
                          chop_sec=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
+
         print("Plots shown.")
 
     def exportResults(self):

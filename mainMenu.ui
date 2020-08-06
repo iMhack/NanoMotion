@@ -576,13 +576,13 @@
      <property name="title">
       <string>View plot</string>
      </property>
-     <addaction name="actionViolin"/>
-     <addaction name="actionViolin_all_on_one"/>
-     <addaction name="actionPos"/>
-     <addaction name="actionx_shift"/>
-     <addaction name="actiony_shift"/>
-     <addaction name="actionViolin_chop"/>
-     <addaction name="actionPhase"/>
+     <addaction name="view_position"/>
+     <addaction name="view_position_x"/>
+     <addaction name="view_position_y"/>
+     <addaction name="view_violin"/>
+     <addaction name="view_violin_chop"/>
+     <addaction name="view_viollin_all_on_one"/>
+     <addaction name="view_phase"/>
     </widget>
     <addaction name="actionSubstract"/>
     <addaction name="menuView_plot"/>
@@ -644,7 +644,7 @@
     <string>Edit objects list</string>
    </property>
   </action>
-  <action name="actionViolin">
+  <action name="view_violin">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -652,15 +652,15 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Violin_step_length</string>
+    <string>Violins</string>
    </property>
   </action>
-  <action name="actionPos">
+  <action name="view_position">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>pos(t)</string>
+    <string>Position [y(x)]</string>
    </property>
   </action>
   <action name="actionSub_frameset">
@@ -690,20 +690,20 @@
     <string>S</string>
    </property>
   </action>
-  <action name="actionx_shift">
+  <action name="view_position_x">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>x(t)_shift</string>
+    <string>x displacement [x(t)]</string>
    </property>
   </action>
-  <action name="actiony_shift">
+  <action name="view_position_y">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>y(t)_shift</string>
+    <string>y displacement [y(t)]</string>
    </property>
   </action>
   <action name="actionShow_results">
@@ -716,7 +716,7 @@
     <string>Export results</string>
    </property>
   </action>
-  <action name="actionViolin_all_on_one">
+  <action name="view_viollin_all_on_one">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -724,23 +724,23 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Violin_all_on_one</string>
+    <string>All violins on one graph</string>
    </property>
   </action>
-  <action name="actionViolin_chop">
+  <action name="view_violin_chop">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Violin_chop</string>
+    <string>Chopped violins</string>
    </property>
   </action>
-  <action name="actionPhase">
+  <action name="view_phase">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>phase</string>
+    <string>Phase</string>
    </property>
   </action>
  </widget>

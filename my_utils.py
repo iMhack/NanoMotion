@@ -28,7 +28,7 @@ def plot_results(shift_x, shift_x_y_error, shift_y, shift_p, fps, res, output_na
         shift_length_step_um = np.sqrt(np.square(shift_x_step_um) + np.square(shift_y_step_um))
         ls = 'dotted'
         fmt = 'o'
-        if (plots_dict["x(t)_shift"]):
+        if (plots_dict["view_position_x"]):
             plt.figure(num=output_name + 'x(t), um(s)')
             #            plt.plot([frame / fps for frame in range(len(my_shift_x))], [x * res for x in my_shift_x], "-")
             plt.errorbar([frame / fps for frame in range(len(my_shift_x))], my_shift_x_um, ls=ls, fmt=fmt,
@@ -38,14 +38,25 @@ def plot_results(shift_x, shift_x_y_error, shift_y, shift_p, fps, res, output_na
             plt.xlabel("t, s")
             plt.ylabel("x, um")
             plt.savefig(output_name + "_x(t).png")
-        if (plots_dict["Violin_step_length"]):
+
+        if (plots_dict["view_position_y"]):
+            plt.figure(num=output_name + 'y(t), um(s)')
+            plt.errorbar([frame / fps for frame in range(len(my_shift_y))], my_shift_y_um, ls=ls, fmt=fmt,
+                         yerr=my_shift_y_um_error)
+            plt.grid()
+            plt.title("y(t), #" + str(solver_number) + "")
+            plt.xlabel("t, s")
+            plt.ylabel("y, um")
+            plt.savefig(output_name + "_y(t).png")
+
+        if (plots_dict["view_violin"]):
             plt.figure(num=output_name + 'violin of step length')
             plt.ylabel("step length, um")
             sns.violinplot(data=shift_length_step_um, inner="stick")
             plt.title("Violin, #" + str(solver_number) + "")
             plt.savefig(output_name + "_violin.png")
 
-        if (plots_dict["Violin_chop"]):
+        if (plots_dict["view_violin_chop"]):
             plt.figure(num=output_name + 'violin chopped of step length')
             plt.ylabel("step length, um")
             number_of_frame_in_a_chop = int(chop_sec * fps)
@@ -65,20 +76,10 @@ def plot_results(shift_x, shift_x_y_error, shift_y, shift_p, fps, res, output_na
             plt.title("Violin, #" + str(solver_number) + " chopped every " + str(chop_sec) + " sec")
             plt.savefig(output_name + "_violin_chopped.png")
 
-        if (plots_dict["Violin_all_on_one"]):
+        if (plots_dict["view_viollin_all_on_one"]):
             shift_lenght_all.append(shift_length_step_um)
 
-        if (plots_dict["y(t)_shift"]):
-            plt.figure(num=output_name + 'y(t), um(s)')
-            plt.errorbar([frame / fps for frame in range(len(my_shift_y))], my_shift_y_um, ls=ls, fmt=fmt,
-                         yerr=my_shift_y_um_error)
-            plt.grid()
-            plt.title("y(t), #" + str(solver_number) + "")
-            plt.xlabel("t, s")
-            plt.ylabel("y, um")
-            plt.savefig(output_name + "_y(t).png")
-
-        if (plots_dict["pos(t)"]):
+        if (plots_dict["view_position"]):
             plt.figure(num=output_name + 'y(x), um(um)')
             plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls,
                          fmt=fmt)  # , yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
@@ -88,7 +89,7 @@ def plot_results(shift_x, shift_x_y_error, shift_y, shift_p, fps, res, output_na
             plt.ylabel("y, um")
             plt.savefig(output_name + "_y(x).png")
 
-        if (plots_dict["phase"]):
+        if (plots_dict["view_phase"]):
             plt.figure(num=output_name + 'phase')
             plt.grid()
             plt.title("Phase, #{}".format(solver_number))
@@ -98,7 +99,7 @@ def plot_results(shift_x, shift_x_y_error, shift_y, shift_p, fps, res, output_na
             plt.savefig(output_name + "_p.png")
 
     print(np.shape(shift_lenght_all))
-    if (plots_dict["Violin_all_on_one"]):
+    if (plots_dict["view_viollin_all_on_one"]):
         plt.figure(num=output_name + 'Violins')
         plt.ylabel("step length, um")
         plt.xlabel("Zone #")

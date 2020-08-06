@@ -8,8 +8,8 @@
         "stop_frame": 500,
         "box_width": 60,
         "box_height": 60,
-        "tracking": true,
-        "compare_to_first": false,
+        "tracking": false,
+        "compare_to_first": true,
         "chop_sec": 5
     },
     "extra": {
@@ -17,13 +17,13 @@
         "substract_level": 4
     },
     "actions": {
-        "x_shift": true,
-        "y_shift": true,
         "position": true,
-        "phase": true,
+        "position_x": true,
+        "position_y": false,
+        "phase": false,
         "violin": false,
-        "violin_all_on_one": false,
-        "violin_chop": false
+        "violin_chop": false,
+        "violin_all_on_one": false
     },
     "boxes": {
         "0": {
