@@ -20,7 +20,7 @@ from PyQt5 import QtWidgets
 
 from dragRectangle import DraggableRectangle
 from solver import Solver
-from my_utils import create_dirs, export_results, plot_results
+from utils import create_dirs, export_results, plot_results
 
 print("Beginning of the code.")
 
@@ -453,7 +453,7 @@ class Main(QMainWindow, Ui_MainWindow):
                 item.setText("%d - %d%% (frame %d/%d)"
                              % (j, s.progress, s.current_i - int(self.lineEdit_start_frame.text()), int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
 
-            if self.checkBox_live_preview.isChecked():
+            if s.progress == 100 or self.checkBox_live_preview.isChecked():
                 self.imshow.set_data(rgb2gray(s.frame_n))
                 for r in self.boxes_dict:
                     r.update_from_solver()

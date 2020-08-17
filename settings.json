@@ -2,12 +2,12 @@
     "parameters": {
         "pixel_size": 1.67,
         "magnification": 0,
-        "sub_pixel": 200,
+        "sub_pixel": 400,
         "fps": 28,
         "start_frame": 0,
-        "stop_frame": 500,
-        "box_width": 60,
-        "box_height": 60,
+        "stop_frame": 4000,
+        "box_width": 80,
+        "box_height": 80,
         "tracking": false,
         "compare_to_first": true,
         "chop_sec": 5
@@ -22,37 +22,37 @@
         "position_y": false,
         "phase": false,
         "violin": false,
-        "violin_chop": false,
-        "violin_all_on_one": false
+        "violin_chop": true,
+        "violin_all_on_one": true
     },
     "boxes": {
         "0": {
             "number": 0,
             "x0": 238.59537964695954,
             "y0": 406.59093911703167,
-            "width": 60,
-            "height": 60
+            "width": 80,
+            "height": 80
         },
         "1": {
             "number": 1,
             "x0": 182.1206466292341,
             "y0": 194.1383720503503,
-            "width": 60,
-            "height": 60
+            "width": 80,
+            "height": 80
         },
         "2": {
             "number": 2,
             "x0": 391.8839406950715,
             "y0": 207.58473705457072,
-            "width": 60,
-            "height": 60
+            "width": 80,
+            "height": 80
         },
         "3": {
             "number": 3,
             "x0": 475.2514037212376,
             "y0": 225.0650115600571,
-            "width": 60,
-            "height": 60
+            "width": 80,
+            "height": 80
         }
     }
 }

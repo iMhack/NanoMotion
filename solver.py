@@ -51,8 +51,8 @@ class Solver(QThread):
         self.shift_p = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.shift_x_y_error = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.box_shift = [[[None, None] for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
-        self.total_box_shift = [[0, 0] for _ in self.box_dict]
         self.cumulated_shift = [[0, 0] for _ in self.box_dict]
+        self.correction = [[0, 0] for _ in self.box_dict]
 
         self.frame_n = self.videodata.get_frame(start_frame)
         self.progress = 0
@@ -154,65 +154,70 @@ class Solver(QThread):
                         # If compare_first is True, the shift values represent the absolute displacement.
                         # In the other case, the shift values represent the relative displacement.
 
-                        # TODO: multiply factor?
-                        shift[0] = shift[0] * 1
-                        shift[1] = shift[1] * 1
+                        # TODO: adapt outliers threshold
+                        threshold = 1
 
                         relative_shift = [0, 0]
+                        relative_error = 0
                         if self.compare_first:
-                            self.shift_x[j][i] = shift[0]
-                            self.shift_y[j][i] = shift[1]
-
-                            self.shift_x_y_error[j][i] = error
-
                             relative_shift = [
-                                              shift[0] - self.shift_x[j][i - 1],
-                                              shift[1] - self.shift_y[j][i - 1]
+                                              shift[0] - self.shift_x[j][i - 1] - self.correction[j][0],
+                                              shift[1] - self.shift_y[j][i - 1] - self.correction[j][1]
                             ]
+
+                            relative_error = error - self.shift_x_y_error[j][i - 1]
                         else:
-                            self.shift_x[j][i] = self.shift_x[j][i - 1] + shift[0]
-                            self.shift_y[j][i] = self.shift_y[j][i - 1] + shift[1]
-
-                            self.shift_x_y_error[j][i] = self.shift_x_y_error[j][i - 1] + error
-
                             relative_shift = [
                                               shift[0],
                                               shift[1]
                             ]
 
-                        # TODO: work upon diffphase
-                        # TODO: integrate shifting value
+                            relative_error = error
 
-                        # TODO: add arrows
-                        self._draw_arrow(j, shift[0], shift[1])
-
+                        # TODO: shift here (before threshold correction)?
                         self.cumulated_shift[j][0] += relative_shift[0]
                         self.cumulated_shift[j][1] += relative_shift[1]
 
-                        if j == 1:
-                            print("Box %d - shift: (%f, %f), cumulated shift: (%f, %f)." % (j, shift[0], shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
+                        if abs(relative_shift[0]) > threshold or abs(relative_shift[1]) > threshold:
+                            self.correction[j][0] += relative_shift[0]
+                            self.correction[j][1] += relative_shift[1]
 
-                        # to_shift = [0, 0]
-                        # if self.track and (abs(self.cumulated_shift[j][0]) >= 1 or abs(self.cumulated_shift[j][1]) >= 1):
-                        #     to_shift = [
-                        #                 self._close_to_zero(self.cumulated_shift[j][0]),
-                        #                 self._close_to_zero(self.cumulated_shift[j][1])
-                        #     ]
-                        #
-                        #     print("To shift: (%d, %d), cumulated shift: (%d, %d)." % (to_shift[0], to_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
-                        #
-                        #     self.cumulated_shift[j][0] -= to_shift[0]
-                        #     self.cumulated_shift[j][1] -= to_shift[1]
-                        #
-                        #     print("Shifted at frame %d (~%ds)." % (i, i / self.fps))
-                        #
-                        #     # TODO: use rectangle.set_x() and rectangle.set_y()
-                        #     self.box_dict[j].x_rect += to_shift[0]
-                        #     self.box_dict[j].y_rect += to_shift[1]
-                        #     self._crop_coord(j)
-                        #
-                        #     # TODO: don't reframe
-                        #     # images[j] = self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]  # reframe image for later comparison
+                            relative_shift = [0, 0]
+
+                        self.shift_x[j][i] = self.shift_x[j][i - 1] + relative_shift[0]
+                        self.shift_y[j][i] = self.shift_y[j][i - 1] + relative_shift[1]
+
+                        self.shift_x_y_error[j][i] = self.shift_x_y_error[j][i - 1] + relative_error
+
+                        # TODO: work upon diffphase
+                        # TODO: take into account rotation (https://scikit-image.org/docs/stable/auto_examples/registration/plot_register_rotation.html).
+
+                        self._draw_arrow(j, self.shift_x[j][i] + self.correction[j][0], self.shift_y[j][i] + self.correction[j][1])
+
+                        if j == 1:
+                            print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f." % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
+
+                        # TODO: fix tracking
+                        to_shift = [0, 0]
+                        if self.track and (abs(self.cumulated_shift[j][0]) >= 1.2 or abs(self.cumulated_shift[j][1]) >= 1.2):
+                            to_shift = [
+                                        self._close_to_zero(self.cumulated_shift[j][0]),
+                                        self._close_to_zero(self.cumulated_shift[j][1])
+                            ]
+
+                            print("To shift: (%d, %d), cumulated shift: (%d, %d)." % (to_shift[0], to_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
+
+                            self.cumulated_shift[j][0] -= to_shift[0]
+                            self.cumulated_shift[j][1] -= to_shift[1]
+
+                            print("Shifted at frame %d (~%ds)." % (i, i / self.fps))
+
+                            self.box_dict[j].x_rect += to_shift[0]
+                            self.box_dict[j].y_rect += to_shift[1]
+                            self._crop_coord(j)
+
+                            # TODO: don't reframe
+                            # images[j] = self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]  # reframe image for later comparison
 
                         """
                         to_shift_x = 0
