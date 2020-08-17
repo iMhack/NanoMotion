@@ -88,6 +88,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionStop_solver.setText('Stop Analysis')
         self.actionStop_solver.triggered.connect(self.stopAnalysis)
 
+        self.json_data = {}
+
         self.loadParameters()
 
         self.fileName = ""
@@ -192,6 +194,13 @@ class Main(QMainWindow, Ui_MainWindow):
                 print("Failed to load file/folder.")
                 return
 
+        print(self.fileName)
+        if self.fileName in self.json_data["boxes"]:
+            self.saved_boxes = self.json_data["boxes"][self.fileName]
+            print("Loaded previously saved boxes.")
+        else:
+            self.saved_boxes = {}
+
         try:
             self.unloadFile()
         except AttributeError:
@@ -275,7 +284,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
         self._addRectangle(number, x0, y0, width, height)
 
-        self.saved_boxes[number] = {
+        self.saved_boxes[str(number)] = {
             "number": number,
             "x0": x0,
             "y0": y0,
@@ -326,79 +335,84 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def loadParameters(self):
         with open('settings.json', 'r') as json_file:
-            json_data = json.load(json_file)
+            self.json_data = json.load(json_file)
 
-            self.lineEdit_pix_size.setText(str(json_data["parameters"]["pixel_size"]))
-            self.lineEdit_magn.setText(str(json_data["parameters"]["magnification"]))
-            self.lineEdit_sub_pix.setText(str(json_data["parameters"]["sub_pixel"]))
-            self.lineEdit_fps.setText(str(json_data["parameters"]["fps"]))
-            self.lineEdit_start_frame.setText(str(json_data["parameters"]["start_frame"]))
-            self.lineEdit_stop_frame.setText(str(json_data["parameters"]["stop_frame"]))
+            self.lineEdit_pix_size.setText(str(self.json_data["parameters"]["pixel_size"]))
+            self.lineEdit_magn.setText(str(self.json_data["parameters"]["magnification"]))
+            self.lineEdit_sub_pix.setText(str(self.json_data["parameters"]["sub_pixel"]))
+            self.lineEdit_fps.setText(str(self.json_data["parameters"]["fps"]))
+            self.lineEdit_start_frame.setText(str(self.json_data["parameters"]["start_frame"]))
+            self.lineEdit_stop_frame.setText(str(self.json_data["parameters"]["stop_frame"]))
             # TODO: is it better when disabled?
             # self.lineEdit_start_frame.editingFinished.connect(self.startFrame)
             # self.lineEdit_stop_frame.editingFinished.connect(self.stopFrame)
-            self.lineEdit_w.setText(str(json_data["parameters"]["box_width"]))
-            self.lineEdit_h.setText(str(json_data["parameters"]["box_height"]))
-            self.checkBox_track.setChecked(json_data["parameters"]["tracking"])
-            self.checkBox_compare_first.setChecked(json_data["parameters"]["compare_to_first"])
-            self.lineEdit_chop_sec.setText(str(json_data["parameters"]["chop_sec"]))
+            self.lineEdit_w.setText(str(self.json_data["parameters"]["box_width"]))
+            self.lineEdit_h.setText(str(self.json_data["parameters"]["box_height"]))
+            self.checkBox_track.setChecked(self.json_data["parameters"]["tracking"])
+            self.checkBox_compare_first.setChecked(self.json_data["parameters"]["compare_to_first"])
+            self.lineEdit_chop_sec.setText(str(self.json_data["parameters"]["chop_sec"]))
 
-            self.comboBox_substract_col.setCurrentText(json_data["extra"]["substract_type"])
+            self.comboBox_substract_col.setCurrentText(self.json_data["extra"]["substract_type"])
             for i in plt.colormaps():
                 self.comboBox_substract_col.addItem(i)
 
-            self.lineEdit_substract_lvl.setText(str(json_data["extra"]["substract_level"]))
+            self.lineEdit_substract_lvl.setText(str(self.json_data["extra"]["substract_level"]))
 
             self.comboBox_substract_col.currentIndexChanged.connect(self.substract)
             # TODO: save/load substract checkbox
             self.checkBox_substract.stateChanged.connect(self.substract)
             self.lineEdit_substract_lvl.editingFinished.connect(self.substract)
 
-            self.view_position.setChecked(json_data["actions"]["position"])
-            self.view_position_x.setChecked(json_data["actions"]["position_x"])
-            self.view_position_y.setChecked(json_data["actions"]["position_y"])
-            self.view_phase.setChecked(json_data["actions"]["phase"])
-            self.view_violin.setChecked(json_data["actions"]["violin"])
-            self.view_violin_chop.setChecked(json_data["actions"]["violin_chop"])
-            self.view_viollin_all_on_one.setChecked(json_data["actions"]["violin_all_on_one"])
-
-            self.saved_boxes = json_data["boxes"]
+            self.view_position.setChecked(self.json_data["actions"]["position"])
+            self.view_position_x.setChecked(self.json_data["actions"]["position_x"])
+            self.view_position_y.setChecked(self.json_data["actions"]["position_y"])
+            self.view_phase.setChecked(self.json_data["actions"]["phase"])
+            self.view_violin.setChecked(self.json_data["actions"]["violin"])
+            self.view_violin_chop.setChecked(self.json_data["actions"]["violin_chop"])
+            self.view_viollin_all_on_one.setChecked(self.json_data["actions"]["violin_all_on_one"])
 
             print("Parameters loaded.")
 
     def saveParameters(self):
-        with open('settings.json', 'w') as json_file:
-            json_data = {
-                         "parameters": {
-                             "pixel_size": float(self.lineEdit_pix_size.text()),
-                             "magnification": int(self.lineEdit_magn.text()),
-                             "sub_pixel": int(self.lineEdit_sub_pix.text()),
-                             "fps": int(self.lineEdit_fps.text()),
-                             "start_frame": int(self.lineEdit_start_frame.text()),
-                             "stop_frame": int(self.lineEdit_stop_frame.text()),
-                             "box_width": int(self.lineEdit_w.text()),
-                             "box_height": int(self.lineEdit_h.text()),
-                             "tracking": self.checkBox_track.isChecked(),
-                             "compare_to_first": self.checkBox_compare_first.isChecked(),
-                             "chop_sec": int(self.lineEdit_chop_sec.text())
-                         },
-                         "extra": {
-                             "substract_type": self.comboBox_substract_col.currentText(),
-                             "substract_level": int(self.lineEdit_substract_lvl.text())
-                         },
-                         "actions": {
-                             "position": self.view_position.isChecked(),
-                             "position_x": self.view_position_x.isChecked(),
-                             "position_y": self.view_position_y.isChecked(),
-                             "phase": self.view_phase.isChecked(),
-                             "violin": self.view_violin.isChecked(),
-                             "violin_chop": self.view_violin_chop.isChecked(),
-                             "violin_all_on_one": self.view_viollin_all_on_one.isChecked()
-                         },
-                         "boxes": self.saved_boxes
-            }
+        # Ensure moved boxes are saved with the updated coordinates
+        for j in range(len(self.saved_boxes)):
+            self.saved_boxes[str(j)]["x0"] = self.boxes_dict[j].x_rect
+            self.saved_boxes[str(j)]["y0"] = self.boxes_dict[j].y_rect
 
-            json.dump(json_data, json_file, indent=4)
+        self.json_data["boxes"][self.fileName] = self.saved_boxes
+
+        self.json_data = {
+                     "parameters": {
+                         "pixel_size": float(self.lineEdit_pix_size.text()),
+                         "magnification": int(self.lineEdit_magn.text()),
+                         "sub_pixel": int(self.lineEdit_sub_pix.text()),
+                         "fps": int(self.lineEdit_fps.text()),
+                         "start_frame": int(self.lineEdit_start_frame.text()),
+                         "stop_frame": int(self.lineEdit_stop_frame.text()),
+                         "box_width": int(self.lineEdit_w.text()),
+                         "box_height": int(self.lineEdit_h.text()),
+                         "tracking": self.checkBox_track.isChecked(),
+                         "compare_to_first": self.checkBox_compare_first.isChecked(),
+                         "chop_sec": int(self.lineEdit_chop_sec.text())
+                     },
+                     "extra": {
+                         "substract_type": self.comboBox_substract_col.currentText(),
+                         "substract_level": int(self.lineEdit_substract_lvl.text())
+                     },
+                     "actions": {
+                         "position": self.view_position.isChecked(),
+                         "position_x": self.view_position_x.isChecked(),
+                         "position_y": self.view_position_y.isChecked(),
+                         "phase": self.view_phase.isChecked(),
+                         "violin": self.view_violin.isChecked(),
+                         "violin_chop": self.view_violin_chop.isChecked(),
+                         "violin_all_on_one": self.view_viollin_all_on_one.isChecked()
+                     },
+                     "boxes": self.json_data["boxes"]
+        }
+
+        with open('settings.json', 'w') as json_file:
+            json.dump(self.json_data, json_file, indent=4)
 
             print("Parameters saved.")
 
