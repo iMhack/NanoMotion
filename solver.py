@@ -1,8 +1,6 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from threading import RLock
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 import matplotlib.patches as patches
 from decimal import Decimal, ROUND_HALF_UP
 import math
@@ -286,6 +284,7 @@ class Solver(QThread):
         z_dec = []
 
         for j in range(len(self.box_dict)):
+            print("Computed std for box %s." % (j))
             x = [i * self.res for i in self.shift_x[j]]
             y = [i * self.res for i in self.shift_y[j]]
             z = np.sqrt((np.std(x)) ** 2 + (np.std(y)) ** 2)
@@ -307,11 +306,23 @@ class Solver(QThread):
             x_j = self.shift_x[j]
             y_j = self.shift_y[j]
 
-            if x_j or y_j is None:  # analysis stopped, return gracefully
-                raise UserWarning("Analysis stopped.")
+            # if x_j or y_j is None:  # analysis stopped, return gracefully
+            #     raise UserWarning("Analysis stopped.")
 
-            x = [i * self.res for i in x_j]
-            y = [i * self.res for i in y_j]
+            x = []
+            for i in x_j:
+                if i is None:
+                    raise UserWarning("Analysis stopped.")
+                else:
+                    x.append(i * self.res)
+
+            y = []
+            for i in y_j:
+                if i is None:
+                    raise UserWarning("Analysis stopped.")
+                else:
+                    y.append(i * self.res)
+
             dx = []
             dy = []
             dz = []

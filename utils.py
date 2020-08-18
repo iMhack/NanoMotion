@@ -111,18 +111,32 @@ def plot_results(shift_x, shift_x_y_error, shift_y, shift_p, fps, res, output_na
 
 
 def export_results(shift_x, shift_y, fps, res, w, h, z_std, dz_rms, v, output_name):
-    print("Started exporting results.")
-    df = pd.DataFrame({"t, s": [frame / fps for frame in range(len(shift_x))], "x, px": shift_x, "y, px": shift_y,
-                       "x, um": [x * res for x in shift_x], "y, um": [y * res for y in shift_y]})
-    df = pd.concat([df, pd.DataFrame({"z std, um": [z_std], "total z, um": [dz_rms], "v, um/s": [v], "window, px":
-                   [str(w) + " x " + str(h)], "window, um": [str(w * res) + " x " + str(h * res)], "um per px": [res]})], axis=1)
-    df = df[["t, s", "x, px", "y, px", "x, um", "y, um", "z std, um", "total z, um", "v, um/s", "window, px",
+    target = output_name + "_output.xlsx"
+    print("Exporting results to %s." % (target))
+
+    df = pd.DataFrame({
+                        "frame": [frame for frame in range(len(shift_x))],
+                        "t, s": [frame / fps for frame in range(len(shift_x))],
+                        "x, px": shift_x,
+                        "y, px": shift_y,
+                        "x, um": [x * res for x in shift_x],
+                        "y, um": [y * res for y in shift_y]
+                    })
+    df = pd.concat([df, pd.DataFrame({
+                        "z std, um": [z_std],
+                        "total z, um": [dz_rms],
+                        "v, um/s": [v],
+                        "window, px": [str(w) + " x " + str(h)],
+                        "window, um": [str(w * res) + " x " + str(h * res)],
+                        "um per px": [res]
+                    })], axis=1)
+    df = df[["frame", "t, s", "x, px", "y, px", "x, um", "y, um", "z std, um", "total z, um", "v, um/s", "window, px",
              "window, um", "um per px"]]
+
     writer = pd.ExcelWriter(
-        os.path.join(output_name + "_output.xlsx"))
+        os.path.join(target))
     df.to_excel(excel_writer=writer, sheet_name="Sheet 1", index=False)
     writer.save()
-    print("Results exported.")
 
 
 def create_dirs(file, cell_name):  # check if /results/filename/ directories exists and create them, if not
