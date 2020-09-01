@@ -27,6 +27,7 @@ print("Beginning of the code.")
 # To keep the tips when editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
 
+
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self, ):
         super(Main, self).__init__()
@@ -468,7 +469,7 @@ class Main(QMainWindow, Ui_MainWindow):
                              % (j, s.progress, s.current_i - int(self.lineEdit_start_frame.text()), int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
 
             if s.progress == 100 or self.checkBox_live_preview.isChecked():
-                self.imshow.set_data(rgb2gray(s.frame_n))
+                self.imshow.set_data(s.frame_n)
                 for r in self.boxes_dict:
                     r.update_from_solver()
                 self.figure.canvas.draw()

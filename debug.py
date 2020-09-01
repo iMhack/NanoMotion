@@ -16,8 +16,10 @@ original_rts_image = rgb2gray(cv2.imread("./debug/box_0-215.png"))
 # Now try working in frequency domain
 # First, band-pass filter both images
 
-image = skimage.filters.difference_of_gaussians(original_image, 0.5, 22)
-rts_image = skimage.filters.difference_of_gaussians(original_rts_image, 0.5, 22)
+low_sigma = 0.5
+high_sigma = 25
+image = skimage.filters.difference_of_gaussians(original_image, low_sigma, high_sigma)
+rts_image = skimage.filters.difference_of_gaussians(original_rts_image, low_sigma, high_sigma)
 
 # f_radius = 1000
 # f_amount = 1000
@@ -94,7 +96,7 @@ ax[9].set_title("Log-Polar-Transformed\nOriginal FFT")
 ax[9].imshow(warped_image_fs, cmap='magma')
 ax[10].set_title("Log-Polar-Transformed\nModified FFT")
 ax[10].imshow(warped_rts_fs, cmap='magma')
-ax[11].set_title("Rotated ross-correlation")
+ax[11].set_title("Rotated cross-correlation")
 ax[11].imshow(rotated_cc_image.real)
 
 fig.tight_layout(pad=1)
