@@ -139,12 +139,13 @@ def export_results(shift_x, shift_y, fps, res, w, h, z_std, dz_rms, v, output_na
     writer.save()
 
 
-def create_dirs(file, cell_name):  # check if /results/filename/ directories exists and create them, if not
+def create_dirs(file, cell_name):
+    # TODO: rework to take into account directories
     videofile_dir = os.path.dirname(os.path.abspath(file))
-    if not os.path.isdir(os.path.join(videofile_dir, "results")):
-        os.makedirs(os.path.join(videofile_dir, "results"))
+    os.makedirs(os.path.join(videofile_dir, "results"), exist_ok=True)
+
     output_dir = os.path.join(videofile_dir, "results", os.path.basename(file)[:-4])
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+
     output_name = os.path.join(output_dir, os.path.basename(file)[:-4] + "_cell_")
     return output_name

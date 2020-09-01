@@ -6,6 +6,8 @@ from decimal import Decimal, ROUND_HALF_UP
 import math
 import skimage.color
 import skimage.registration
+import os
+import cv2
 
 lock = RLock()
 
@@ -176,11 +178,33 @@ class Solver(QThread):
                         self.cumulated_shift[j][0] += relative_shift[0]
                         self.cumulated_shift[j][1] += relative_shift[1]
 
-                        if abs(relative_shift[0]) > threshold or abs(relative_shift[1]) > threshold:
-                            self.correction[j][0] += relative_shift[0]
-                            self.correction[j][1] += relative_shift[1]
+                        print("Raw shift: %f, %f." % (shift[0], shift[1]))
 
-                            relative_shift = [0, 0]
+                        if abs(relative_shift[0]) > threshold or abs(relative_shift[1]) > threshold:
+                            # TODO: debug toggle
+                            print("Box %d, frame %d." % (j, i))
+                            print("Previous shift: %f, %f." % (self.shift_x[j][i - 1], self.shift_y[j][i - 1]))
+                            print("Current shift: %f, %f." % (shift[0], shift[1]))
+                            print("Relative shift: %f, %f." % (relative_shift[0], relative_shift[1]))
+
+                            os.makedirs("./debug/", exist_ok=True)
+
+                            # Previous image (i - 1 or 0): images[j]
+                            if self.compare_first:
+                                cv2.imwrite("./debug/box_%d-0.png" % (j), images[j])
+
+                                previous = skimage.color.rgb2gray(self.videodata.get_frame(i - 1))[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]
+                                cv2.imwrite(("./debug/box_%d-%d_p.png" % (j, i - 1)), previous)
+                            else:
+                                cv2.imwrite(("./debug/box_%d-%d_p.png" % (j, i - 1)), images[j])
+
+                            # Current image (i): image_n
+                            cv2.imwrite(("./debug/box_%d-%d.png" % (j, i)), image_n)
+
+                            # self.correction[j][0] += relative_shift[0]
+                            # self.correction[j][1] += relative_shift[1]
+
+                            # relative_shift = [0, 0]
 
                         self.shift_x[j][i] = self.shift_x[j][i - 1] + relative_shift[0]
                         self.shift_y[j][i] = self.shift_y[j][i - 1] + relative_shift[1]
@@ -193,7 +217,8 @@ class Solver(QThread):
                         self._draw_arrow(j, self.shift_x[j][i] + self.correction[j][0], self.shift_y[j][i] + self.correction[j][1])
 
                         if j == 1:
-                            print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f." % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
+                            print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f."
+                                  % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
 
                         # TODO: fix tracking
                         to_shift = [0, 0]
@@ -216,36 +241,6 @@ class Solver(QThread):
 
                             # TODO: don't reframe
                             # images[j] = self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]  # reframe image for later comparison
-
-                        """
-                        to_shift_x = 0
-                        to_shift_y = 0
-                        if self.track and (abs(self.cumulated_shift[j][0]) >= 1 or abs(self.cumulated_shift[j][1]) >= 1):
-                            to_shift_x = self._close_to_zero(self.cumulated_shift[j][0])
-                            to_shift_y = self._close_to_zero(self.cumulated_shift[j][1])
-
-                            # print("Cumulated shift: (%f, %f) → to shift: (%f, %f)." % (self.cumulated_shift[j][0], self.cumulated_shift[j][1], to_shift_x, to_shift_y))
-                            # print("Shifted at frame %d (~%ds)." % (i, i / self.fps))
-
-                            self.box_dict[j].x_rect += to_shift_x
-                            self.box_dict[j].y_rect += to_shift_y
-                            self._crop_coord(j)
-
-                            # TODO: don't reframe
-                            images[j] = self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]  # reframe image for later comparison
-                        elif not self.track:
-                            print("Cumulated shift: (%f, %f)." % (self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
-
-                        self.box_shift[j][i] = [to_shift_x, to_shift_y]
-                        self.total_box_shift[j][0] += to_shift_x
-                        self.total_box_shift[j][1] += to_shift_y
-
-                        # print("Total box shift: (%d, %d)." % (self.total_box_shift[j][0], self.total_box_shift[j][1]))
-
-                        # substract shifted amount from cumulated shift
-                        self.cumulated_shift[j][0] -= to_shift_x
-                        self.cumulated_shift[j][1] -= to_shift_y
-                        """
 
                         if not self.compare_first:  # store the current image to be compared later
                             images[j] = image_n
