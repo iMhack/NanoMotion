@@ -480,8 +480,8 @@ class Main(QMainWindow, Ui_MainWindow):
 
         # print(self.solver_list)
         for solver in self.solver_list:
-            plot_results(shift_x=solver.shift_x, shift_x_y_error=solver.shift_x_y_error, shift_y=solver.shift_y,
-                         fps=solver.fps, res=solver.res,
+            plot_results(shift_x=solver.shift_x, shift_y=solver.shift_y, shift_x_y_error=solver.shift_x_y_error,
+                         box_shift=solver.box_shift, fps=solver.fps, res=solver.res,
                          output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
                          chop_sec=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
 
@@ -490,7 +490,8 @@ class Main(QMainWindow, Ui_MainWindow):
     def exportResults(self):
         for solver in self.solver_list:
             for j in range(len(solver.box_dict)):
-                export_results(shift_x=solver.shift_x[j], shift_y=solver.shift_y[j], fps=solver.fps, res=solver.res,
+                export_results(shift_x=solver.shift_x[j], shift_y=solver.shift_y[j], box_shift=solver.box_shift[j],
+                               fps=solver.fps, res=solver.res,
                                w=solver.box_dict[j].rect._width, h=solver.box_dict[j].rect._height,
                                z_std=solver.z_std[j],
                                dz_rms=solver.z_rms[j],

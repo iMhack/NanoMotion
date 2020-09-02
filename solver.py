@@ -51,12 +51,14 @@ class Solver(QThread):
         self.shift_y = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.shift_p = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.shift_x_y_error = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
-        self.box_shift = [[[None, None] for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
+        self.box_shift = [[[0, 0] for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.cumulated_shift = [[0, 0] for _ in self.box_dict]
 
         self.frame_n = self.videodata.get_frame(start_frame)
         self.progress = 0
         self.current_i = -1
+
+        self.debug_frames = []
 
     def run(self):
         try:
@@ -105,8 +107,12 @@ class Solver(QThread):
 
         return image
 
+    def _get_image_subset(self, image, j):
+        return image[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]
+
     def _filter_image_subset(self, image):
-        image = skimage.filters.difference_of_gaussians(image, 1, 25)
+        if len(self.debug_frames) == 0:
+            image = skimage.filters.difference_of_gaussians(image, 1, 25)
 
         return image
 
@@ -116,10 +122,10 @@ class Solver(QThread):
         images = []  # last image subimages array
 
         with lock:  # store the first subimages for later comparison
-            frame_1 = self._prepare_image(self.videodata.get_frame(0))
+            frame_first = self._prepare_image(self.videodata.get_frame(0))
 
         for j in range(len(self.box_dict)):  # j iterates over all boxes
-            images.append(self._filter_image_subset(frame_1[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]))
+            images.append(self._filter_image_subset(self._get_image_subset(frame_first, j)))
             print("Box %d (%d, %d, %d, %d)." % (j, self.row_min[j], self.row_max[j], self.col_min[j], self.col_max[j]))
 
             self.shift_x[j][self.start_frame] = 0
@@ -145,7 +151,33 @@ class Solver(QThread):
                     self.frame_n = self._prepare_image(self.videodata.get_frame(i))
 
                 for j in range(len(self.box_dict)):  # j iterates over all boxes
-                    image_n = self._filter_image_subset(self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]])
+                    # Propagate previous box shifts
+                    self.box_shift[j][i][0] = self.box_shift[j][i - 1][0]
+                    self.box_shift[j][i][1] = self.box_shift[j][i - 1][1]
+
+                    # Shift before analysis
+                    to_shift = [0, 0]
+                    if self.track and (abs(self.cumulated_shift[j][0]) >= 1.2 or abs(self.cumulated_shift[j][1]) >= 1.2):
+                        to_shift = [
+                                    self._close_to_zero(self.cumulated_shift[j][0]),
+                                    self._close_to_zero(self.cumulated_shift[j][1])
+                        ]
+
+                        print("Box %d - to shift: (%f, %f), cumulated shift: (%f, %f)." % (j, to_shift[0], to_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
+
+                        self.cumulated_shift[j][0] -= to_shift[0]
+                        self.cumulated_shift[j][1] -= to_shift[1]
+
+                        self.box_shift[j][i][0] += to_shift[0]
+                        self.box_shift[j][i][1] += to_shift[1]
+
+                        print("Box %d - shifted at frame %d (~%ds)." % (j, i, i / self.fps))
+
+                        self.box_dict[j].x_rect += to_shift[0]
+                        self.box_dict[j].y_rect += to_shift[1]
+                        self._crop_coord(j)
+
+                    image_n = self._filter_image_subset(self._get_image_subset(self.frame_n, j))
 
                     shift, error, diffphase = skimage.registration.phase_cross_correlation(images[j], image_n, upsample_factor=self.upsample_factor)
                     shift[0], shift[1] = -shift[1], -shift[0]  # (-y, -x) → (x, y)
@@ -159,9 +191,6 @@ class Solver(QThread):
                     #
                     # If compare_first is True, the shift values represent the absolute displacement.
                     # In the other case, the shift values represent the relative displacement.
-
-                    # TODO: adapt outliers threshold
-                    threshold = 1
 
                     relative_shift = [0, 0]
                     computed_error = 0
@@ -181,11 +210,29 @@ class Solver(QThread):
 
                         # computed_error = error + self.shift_x_y_error[j][i - 1]
 
-                    # TODO: shift here (before threshold correction)?
                     self.cumulated_shift[j][0] += relative_shift[0]
                     self.cumulated_shift[j][1] += relative_shift[1]
 
-                    if abs(relative_shift[0]) > threshold or abs(relative_shift[1]) > threshold:
+                    self.shift_x[j][i] = self.shift_x[j][i - 1] + relative_shift[0]
+                    self.shift_y[j][i] = self.shift_y[j][i - 1] + relative_shift[1]
+
+                    self.shift_x_y_error[j][i] = computed_error
+
+                    # TODO: work upon diffphase
+                    # TODO: take into account rotation (https://scikit-image.org/docs/stable/auto_examples/registration/plot_register_rotation.html).
+
+                    self._draw_arrow(j, self.shift_x[j][i] + self.box_shift[j][i][0], self.shift_y[j][i] + self.box_shift[j][i][1])
+
+                    # if j == 1:
+                    #     print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f."
+                    #           % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
+
+                    if not self.compare_first:  # store the current image to be compared later
+                        images[j] = image_n
+
+                    # TODO: adapt outliers warning threshold
+                    threshold = 10
+                    if i in self.debug_frames or abs(relative_shift[0]) > threshold or abs(relative_shift[1]) > threshold:
                         print("WARNING: shift > threshold (%f)." % (threshold))
                         print("Box %d, frame %d." % (j, i))
                         print("Previous shift: %f, %f." % (self.shift_x[j][i - 1], self.shift_y[j][i - 1]))
@@ -207,45 +254,6 @@ class Solver(QThread):
                         # Current image (i): image_n
                         cv2.imwrite(("./debug/box_%d-%d.png" % (j, i)), image_n)
 
-                    self.shift_x[j][i] = self.shift_x[j][i - 1] + relative_shift[0]
-                    self.shift_y[j][i] = self.shift_y[j][i - 1] + relative_shift[1]
-
-                    self.shift_x_y_error[j][i] = computed_error
-
-                    # TODO: work upon diffphase
-                    # TODO: take into account rotation (https://scikit-image.org/docs/stable/auto_examples/registration/plot_register_rotation.html).
-
-                    self._draw_arrow(j, self.shift_x[j][i], self.shift_y[j][i])
-
-                    if j == 1:
-                        print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f."
-                              % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
-
-                    # TODO: fix tracking
-                    to_shift = [0, 0]
-                    if self.track and (abs(self.cumulated_shift[j][0]) >= 1.2 or abs(self.cumulated_shift[j][1]) >= 1.2):
-                        to_shift = [
-                                    self._close_to_zero(self.cumulated_shift[j][0]),
-                                    self._close_to_zero(self.cumulated_shift[j][1])
-                        ]
-
-                        print("To shift: (%d, %d), cumulated shift: (%d, %d)." % (to_shift[0], to_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
-
-                        self.cumulated_shift[j][0] -= to_shift[0]
-                        self.cumulated_shift[j][1] -= to_shift[1]
-
-                        print("Shifted at frame %d (~%ds)." % (i, i / self.fps))
-
-                        self.box_dict[j].x_rect += to_shift[0]
-                        self.box_dict[j].y_rect += to_shift[1]
-                        self._crop_coord(j)
-
-                        # TODO: don't reframe
-                        # images[j] = self.frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]  # reframe image for later comparison
-
-                    if not self.compare_first:  # store the current image to be compared later
-                        images[j] = image_n
-
                 self.progress = int(((i - self.start_frame) / length) * 100)
                 if self.progress > progress_pivot + 4:
                     print("%d%% (frame %d/%d)." % (self.progress, i - self.start_frame, self.stop_frame - self.start_frame))
@@ -253,11 +261,13 @@ class Solver(QThread):
             else:
                 return
 
-        # Post-process data
+        # Post-process data (invert y-dimension)
         for j in range(len(self.box_dict)):
             inverted_shift_y = [-shift_y for shift_y in self.shift_y[j]]
-
             self.shift_y[j] = inverted_shift_y
+
+            inverted_box_shift = [[entry[0], -entry[1]] for entry in self.box_shift[j]]
+            self.box_shift[j] = inverted_box_shift
 
     def _crop_coord(self, which=-1):
         if which == -1:

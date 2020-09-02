@@ -10,8 +10,9 @@ from scipy.fftpack import fft2, fftshift
 
 import cv2
 
-original_image = rgb2gray(cv2.imread("./debug/box_0-0.png"))
-original_rts_image = rgb2gray(cv2.imread("./debug/box_0-215.png"))
+original_image = rgb2gray(cv2.imread("./debug/box_0-100.png"))
+#original_rts_image = rgb2gray(cv2.imread("./debug/box_0-199.png"))
+original_rts_image = rotate(original_image, 0)
 
 # Now try working in frequency domain
 # First, band-pass filter both images

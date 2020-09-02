@@ -5,23 +5,28 @@ import seaborn as sns
 import numpy as np
 
 
-def plot_results(shift_x, shift_x_y_error, shift_y, shift_p, fps, res, output_name, plots_dict, boxes_dict, chop=False,
+def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res, output_name, plots_dict, boxes_dict, chop=False,
                  chop_sec=0, start_frame=0):
     print("Started plotting results.")
     shift_lenght_all = []
     for j in range(len(boxes_dict)):
-        my_shift_x_y_error = shift_x_y_error[j]
         my_shift_x = shift_x[j]
-        my_shift_x_um = [x * res for x in my_shift_x]
-        my_shift_x_um_error = [e * x for e, x in zip(my_shift_x_y_error, my_shift_x_um)]
         my_shift_y = shift_y[j]
-        my_shift_y_um = [y * res for y in my_shift_y]
+        my_shift_x_y_error = shift_x_y_error[j]
+        my_box_shift = box_shift[j]
+
+        my_shift_x_um = []
+        for i in range(len(my_shift_x)):
+            my_shift_x_um.append((my_shift_x[i] + my_box_shift[i][0]) * res)
+
+        my_shift_y_um = []
+        for i in range(len(my_shift_y)):
+            my_shift_y_um.append((my_shift_y[i] + my_box_shift[i][1]) * res)
+
+        my_shift_x_um_error = [e * x for e, x in zip(my_shift_x_y_error, my_shift_x_um)]
         my_shift_y_um_error = [e * y for e, y in zip(my_shift_x_y_error, my_shift_y_um)]
         my_shift_p = shift_p[j]
-        fps = fps
-        res = res
         output_name = output_name + str(j)
-        plots_dict = plots_dict
         solver_number = j
         shift_x_step_um = [my_shift_x_um[i + 1] - my_shift_x_um[i] for i in range(len(my_shift_x_um) - 1)]
         shift_y_step_um = [my_shift_y_um[i + 1] - my_shift_y_um[i] for i in range(len(my_shift_y_um) - 1)]
@@ -110,7 +115,7 @@ def plot_results(shift_x, shift_x_y_error, shift_y, shift_p, fps, res, output_na
     plt.show()
 
 
-def export_results(shift_x, shift_y, fps, res, w, h, z_std, dz_rms, v, output_name):
+def export_results(shift_x, shift_y, box_shift, fps, res, w, h, z_std, dz_rms, v, output_name):
     target = output_name + "_output.xlsx"
     print("Exporting results to %s." % (target))
 
@@ -119,8 +124,10 @@ def export_results(shift_x, shift_y, fps, res, w, h, z_std, dz_rms, v, output_na
                         "t, s": [frame / fps for frame in range(len(shift_x))],
                         "x, px": shift_x,
                         "y, px": shift_y,
+                        "box shift x, px": [shift[0] for shift in box_shift],
+                        "box shift y, px": [shift[1] for shift in box_shift],
                         "x, um": [x * res for x in shift_x],
-                        "y, um": [y * res for y in shift_y]
+                        "y, um": [y * res for y in shift_y],
                     })
     df = pd.concat([df, pd.DataFrame({
                         "z std, um": [z_std],
@@ -130,8 +137,8 @@ def export_results(shift_x, shift_y, fps, res, w, h, z_std, dz_rms, v, output_na
                         "window, um": [str(w * res) + " x " + str(h * res)],
                         "um per px": [res]
                     })], axis=1)
-    df = df[["frame", "t, s", "x, px", "y, px", "x, um", "y, um", "z std, um", "total z, um", "v, um/s", "window, px",
-             "window, um", "um per px"]]
+    df = df[["frame", "t, s", "x, px", "y, px", "box shift x, px", "box shift y, px", "x, um", "y, um", "z std, um",
+             "total z, um", "v, um/s", "window, px", "window, um", "um per px"]]
 
     writer = pd.ExcelWriter(
         os.path.join(target))
