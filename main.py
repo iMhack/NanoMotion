@@ -20,7 +20,7 @@ from PyQt5 import QtWidgets
 
 from dragRectangle import DraggableRectangle
 from solver import Solver
-from utils import create_dirs, export_results, plot_results
+import utils
 
 print("Beginning of the code.")
 
@@ -36,7 +36,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.saved_boxes = {}
         self.boxes_dict = []  # list of boxes to analyse
         self.plots_dict = {}  # list of plots to plot
-        self.output_name = []
+        self.output_basepath = []
         self.solver_list = []
         self.basename = None
         self.orignalVideoLen = 0
@@ -428,7 +428,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
         self.solver_list.clear()
         self.saveParameters()
-        self.output_name = create_dirs(self.fileName, "")
+        self.output_basepath = utils.create_results_directory(self.fileName, "")
         print("Tracking: %s." % (self.checkBox_track.isChecked()))
         solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
                         box_dict=self.boxes_dict, solver_number=0,
@@ -443,7 +443,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.solver_list.append(solver)
         self.solver_list[0].progressChanged.connect(self.updateProgress)
         self.solver_list[0].start()
-        self.figure.savefig(self.output_name + "boxes_selection.png")
+        self.figure.savefig(self.output_basepath + "boxes_selection.png")
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateProgress)
         self.timer.start(100)
@@ -480,23 +480,24 @@ class Main(QMainWindow, Ui_MainWindow):
 
         # print(self.solver_list)
         for solver in self.solver_list:
-            plot_results(shift_x=solver.shift_x, shift_y=solver.shift_y, shift_x_y_error=solver.shift_x_y_error,
+            utils.plot_results(shift_x=solver.shift_x, shift_y=solver.shift_y, shift_x_y_error=solver.shift_x_y_error,
                          box_shift=solver.box_shift, fps=solver.fps, res=solver.res,
-                         output_name=self.output_name, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
-                         chop_sec=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
+                         output_basepath=self.output_basepath, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
+                         chop_duration=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
 
         print("Plots shown.")
 
     def exportResults(self):
         for solver in self.solver_list:
             for j in range(len(solver.box_dict)):
-                export_results(shift_x=solver.shift_x[j], shift_y=solver.shift_y[j], box_shift=solver.box_shift[j],
+                utils.export_results(shift_x=solver.shift_x[j], shift_y=solver.shift_y[j], box_shift=solver.box_shift[j],
                                fps=solver.fps, res=solver.res,
                                w=solver.box_dict[j].rect._width, h=solver.box_dict[j].rect._height,
                                z_std=solver.z_std[j],
                                dz_rms=solver.z_rms[j],
                                v=solver.v_rms[j],
-                               output_name=self.output_name + str(j))
+                               output_basepath=self.output_basepath + str(j))
+
         print("Files exported.")
 
 

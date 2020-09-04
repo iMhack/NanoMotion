@@ -86,10 +86,7 @@ class Solver(QThread):
         self.figure.canvas.draw()
 
     def _close_to_zero(self, value):
-        if value < 0:
-            return math.ceil(value)
-        else:
-            return math.floor(value)
+        return int(value)  # integer casting truncates the number (1.2 -> 1, -1.2 -> -1)
 
     def _draw_arrow(self, j, dx, dy):
         ax = self.figure.add_subplot(111)
