@@ -117,7 +117,9 @@ class Solver(QThread):
         return image
 
     async def _phase_cross_correlation_wrapper(self, base, current, upsample_factor):
-        return skimage.registration.phase_cross_correlation(base, current, upsample_factor=upsample_factor)
+        current = self._filter_image_subset(current)
+
+        return current, *skimage.registration.phase_cross_correlation(base, current, upsample_factor=upsample_factor)
 
     async def _run_async(self, parameters):
         threads = []
@@ -188,16 +190,11 @@ class Solver(QThread):
                         self.box_dict[j].y_rect += to_shift[1]
                         self._crop_coord(j)
 
-                    parameters[j] = [images[j], self._filter_image_subset(self._get_image_subset(self.frame_n, j)), self.upsample_factor]
+                    parameters[j] = [images[j], self._get_image_subset(self.frame_n, j), self.upsample_factor]
 
                 results = asyncio.run(self._run_async(parameters))
                 for j in range(len(self.box_dict)):
-                    image_n = parameters[j][1]
-
-                    if not self.compare_first:  # store the current image to be compared later
-                        images[j] = image_n
-
-                    shift, error, phase = results[j]
+                    image_n, shift, error, phase = results[j]
                     shift[0], shift[1] = -shift[1], -shift[0]  # (-y, -x) → (x, y)
 
                     # shift[0] is the x displacement computed by comparing the first (if self.compare_first is True) or
@@ -247,6 +244,9 @@ class Solver(QThread):
                     # if j == 1:
                     #     print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f."
                     #           % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
+
+                    if not self.compare_first:  # store the current image to be compared later
+                        images[j] = image_n
 
                     if i in self.debug_frames:
                         print("Box %d, frame %d." % (j, i))
