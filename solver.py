@@ -1,14 +1,16 @@
-from PyQt5.QtCore import QThread, pyqtSignal
-from threading import RLock
-import numpy as np
-import matplotlib.patches as patches
-from decimal import Decimal, ROUND_HALF_UP
+import decimal
 import math
+import os
+from threading import RLock
+
+import cv2
+import numpy as np
 import skimage.color
 import skimage.filters
 import skimage.registration
-import os
-import cv2
+
+import matplotlib.patches as patches
+from PyQt5.QtCore import QThread, pyqtSignal
 
 lock = RLock()
 
@@ -132,9 +134,9 @@ class Solver(QThread):
             self.box_shift[j][self.start_frame] = [0, 0]
 
             self.centers_dict[j] = [
-                               int(self.box_dict[j].x_rect) + self.box_dict[j].rect._width / 2,
-                               int(self.box_dict[j].y_rect) + self.box_dict[j].rect._height / 2
-                              ]
+                int(self.box_dict[j].x_rect) + self.box_dict[j].rect._width / 2,
+                int(self.box_dict[j].y_rect) + self.box_dict[j].rect._height / 2
+            ]
 
             self._draw_arrow(j, 0, 0)
 
@@ -156,8 +158,8 @@ class Solver(QThread):
                     to_shift = [0, 0]
                     if self.track and (abs(self.cumulated_shift[j][0]) >= 1.2 or abs(self.cumulated_shift[j][1]) >= 1.2):
                         to_shift = [
-                                    self._close_to_zero(self.cumulated_shift[j][0]),
-                                    self._close_to_zero(self.cumulated_shift[j][1])
+                            self._close_to_zero(self.cumulated_shift[j][0]),
+                            self._close_to_zero(self.cumulated_shift[j][1])
                         ]
 
                         print("Box %d - to shift: (%f, %f), cumulated shift: (%f, %f)." % (j, to_shift[0], to_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
@@ -194,15 +196,15 @@ class Solver(QThread):
                     # TODO: fix error computation
                     if self.compare_first:
                         relative_shift = [
-                                          shift[0] - self.shift_x[j][i - 1],
-                                          shift[1] - self.shift_y[j][i - 1]
+                            shift[0] - self.shift_x[j][i - 1],
+                            shift[1] - self.shift_y[j][i - 1]
                         ]
 
                         # computed_error = error
                     else:
                         relative_shift = [
-                                          shift[0],
-                                          shift[1]
+                            shift[0],
+                            shift[1]
                         ]
 
                         # computed_error = error + self.shift_x_y_error[j][i - 1]
@@ -297,8 +299,8 @@ class Solver(QThread):
             x = [i * self.res for i in self.shift_x[j]]
             y = [i * self.res for i in self.shift_y[j]]
             z = np.sqrt((np.std(x)) ** 2 + (np.std(y)) ** 2)
-            z_dec.append(Decimal(str(z)).quantize(Decimal('0.001'),
-                                                  rounding=ROUND_HALF_UP))  # special Decimal class for the correct rounding
+            z_dec.append(decimal.Decimal(str(z)).quantize(decimal.Decimal('0.001'),
+                                                          rounding=decimal.ROUND_HALF_UP))  # special Decimal class for the correct rounding
 
         return z_dec  # rounding, leaves 3 digits after comma
 
@@ -343,9 +345,9 @@ class Solver(QThread):
 
             z_tot = np.sum(dz)
             v = (self.fps / (len(x) - 1)) * z_tot
-            z_tot_dec.append(Decimal(str(z_tot)).quantize(Decimal('0.001'),
-                                                          rounding=ROUND_HALF_UP))  # special Decimal class for the correct rounding
-            v_dec.append(Decimal(str(v)).quantize(Decimal('0.001'),
-                                                  rounding=ROUND_HALF_UP))  # special Decimal class for the correct rounding
+            z_tot_dec.append(decimal.Decimal(str(z_tot)).quantize(decimal.Decimal('0.001'),
+                                                                  rounding=decimal.ROUND_HALF_UP))  # special Decimal class for the correct rounding
+            v_dec.append(decimal.Decimal(str(v)).quantize(decimal.Decimal('0.001'),
+                                                          rounding=decimal.ROUND_HALF_UP))  # special Decimal class for the correct rounding
 
         return z_tot_dec, v_dec  # rounding, leaves 3 digits after comma

@@ -1,9 +1,11 @@
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
 import math
+import os
+
+import numpy as np
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 
 def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res, output_basepath, plots_dict, boxes_dict, chop=False,
@@ -138,24 +140,24 @@ def export_results(shift_x, shift_y, box_shift, fps, res, w, h, z_std, dz_rms, v
     print("Exporting results to %s." % (target))
 
     df = pd.DataFrame({
-                        "frame": [frame for frame in range(len(shift_x))],
-                        "t, s": [frame / fps for frame in range(len(shift_x))],
-                        "x, px": shift_x,
-                        "y, px": shift_y,
-                        "box shift x, px": [shift[0] for shift in box_shift],
-                        "box shift y, px": [shift[1] for shift in box_shift],
-                        "x, um": [x * res for x in shift_x],
-                        "y, um": [y * res for y in shift_y]
-                    })
+        "frame": [frame for frame in range(len(shift_x))],
+        "t, s": [frame / fps for frame in range(len(shift_x))],
+        "x, px": shift_x,
+        "y, px": shift_y,
+        "box shift x, px": [shift[0] for shift in box_shift],
+        "box shift y, px": [shift[1] for shift in box_shift],
+        "x, um": [x * res for x in shift_x],
+        "y, um": [y * res for y in shift_y]
+    })
 
     df = pd.concat([df, pd.DataFrame({
-                        "z std, um": [z_std],
-                        "total z, um": [dz_rms],
-                        "v, um/s": [v],
-                        "window, px": [str(w) + " x " + str(h)],
-                        "window, um": [str(w * res) + " x " + str(h * res)],
-                        "um per px": [res]
-                    })], axis=1)
+        "z std, um": [z_std],
+        "total z, um": [dz_rms],
+        "v, um/s": [v],
+        "window, px": [str(w) + " x " + str(h)],
+        "window, um": [str(w * res) + " x " + str(h * res)],
+        "um per px": [res]
+    })], axis=1)
 
     df = df[["frame", "t, s", "x, px", "y, px", "box shift x, px", "box shift y, px", "x, um", "y, um", "z std, um",
              "total z, um", "v, um/s", "window, px", "window, um", "um per px"]]

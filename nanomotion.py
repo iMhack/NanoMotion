@@ -1,26 +1,26 @@
-from configparser import ConfigParser
-import sys
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-import matplotlib.patches as patches
-import pims
-from skimage.color import rgb2gray
-import os.path
 import json
+import os
+import os.path
+import sys
 
-from PyQt5.QtWidgets import (QApplication, QFileDialog)
-from PyQt5.uic import loadUiType
-from PyQt5.QtCore import QTimer
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg as FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar)
-from PyQt5 import QtWidgets
+import numpy as np
+import skimage.color
 
-from dragRectangle import DraggableRectangle
-from solver import Solver
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import pims
 import utils
+from dragRectangle import DraggableRectangle
+from matplotlib.backends.backend_qt5agg import \
+    FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import \
+    NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QApplication, QFileDialog
+from PyQt5.uic import loadUiType
+from solver import Solver
 
 print("Beginning of the code.")
 
@@ -106,12 +106,12 @@ class Main(QMainWindow, Ui_MainWindow):
             if self.fileName != "":
                 try:
                     if update:
-                        self.imshow.set_data(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
+                        self.imshow.set_data(skimage.color.rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
                         self.figure.canvas.draw()
                         self.figure.canvas.flush_events()
                     return self.videodata.get_frame(int(self.lineEdit_start_frame.text()))
                 except Exception:
-                    print("Failed to show the first frame.")  # TODO: print appropriate text
+                    print("Failed to show the first frame.")
                     return 0
         else:
             return 0
@@ -220,10 +220,10 @@ class Main(QMainWindow, Ui_MainWindow):
         self.figure = Figure()
         sub = self.figure.add_subplot(111)
         try:
-            self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))),
+            self.imshow = sub.imshow(skimage.color.rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))),
                                      cmap='gray')
         except Exception:
-            self.imshow = sub.imshow(rgb2gray(self.videodata.get_frame(0)), cmap='gray')
+            self.imshow = sub.imshow(skimage.color.rgb2gray(self.videodata.get_frame(0)), cmap='gray')
 
         self.basename = os.path.basename(self.fileName)
         self.views.addItem(self.basename)
@@ -238,22 +238,22 @@ class Main(QMainWindow, Ui_MainWindow):
         for box in self.saved_boxes.values():
             self._addRectangle(box["number"], box["x0"], box["y0"], box["width"], box["height"])
 
-    def substract(self):  # TODO: edit it to work with boundaries we set
+    def substract(self):
         if self.checkBox_substract.isChecked():
             print("Enabled substract.")
             try:
                 start_frame = int(self.lineEdit_start_frame.text())
                 stop_frame = int(self.lineEdit_stop_frame.text())
                 n_frames = stop_frame - start_frame
-                first_frame = rgb2gray(self.videodata.get_frame(start_frame))
+                first_frame = skimage.color.rgb2gray(self.videodata.get_frame(start_frame))
                 print(type(first_frame))
                 cumulative_frame = np.zeros(np.shape(first_frame))
                 print(type(cumulative_frame))
                 for i in range(stop_frame, start_frame, -int(n_frames / int(self.lineEdit_substract_lvl.text()))):
                     print(i)
-                    cumulative_frame += rgb2gray(self.videodata.get_frame(i)) - first_frame
+                    cumulative_frame += skimage.color.rgb2gray(self.videodata.get_frame(i)) - first_frame
 
-                self.imshow.set_data(rgb2gray(cumulative_frame))
+                self.imshow.set_data(skimage.color.rgb2gray(cumulative_frame))
                 self.imshow.set_cmap(self.comboBox_substract_col.currentText())
                 self.figure.canvas.draw()
             except Exception:
@@ -344,9 +344,6 @@ class Main(QMainWindow, Ui_MainWindow):
             self.lineEdit_fps.setText(str(self.json_data["parameters"]["fps"]))
             self.lineEdit_start_frame.setText(str(self.json_data["parameters"]["start_frame"]))
             self.lineEdit_stop_frame.setText(str(self.json_data["parameters"]["stop_frame"]))
-            # TODO: is it better when disabled?
-            # self.lineEdit_start_frame.editingFinished.connect(self.startFrame)
-            # self.lineEdit_stop_frame.editingFinished.connect(self.stopFrame)
             self.lineEdit_w.setText(str(self.json_data["parameters"]["box_width"]))
             self.lineEdit_h.setText(str(self.json_data["parameters"]["box_height"]))
             self.checkBox_track.setChecked(self.json_data["parameters"]["tracking"])
@@ -360,7 +357,6 @@ class Main(QMainWindow, Ui_MainWindow):
             self.lineEdit_substract_lvl.setText(str(self.json_data["extra"]["substract_level"]))
 
             self.comboBox_substract_col.currentIndexChanged.connect(self.substract)
-            # TODO: save/load substract checkbox
             self.checkBox_substract.stateChanged.connect(self.substract)
             self.lineEdit_substract_lvl.editingFinished.connect(self.substract)
 
@@ -383,33 +379,33 @@ class Main(QMainWindow, Ui_MainWindow):
         self.json_data["boxes"][self.fileName] = self.saved_boxes
 
         self.json_data = {
-                     "parameters": {
-                         "pixel_size": float(self.lineEdit_pix_size.text()),
-                         "magnification": int(self.lineEdit_magn.text()),
-                         "sub_pixel": int(self.lineEdit_sub_pix.text()),
-                         "fps": int(self.lineEdit_fps.text()),
-                         "start_frame": int(self.lineEdit_start_frame.text()),
-                         "stop_frame": int(self.lineEdit_stop_frame.text()),
-                         "box_width": int(self.lineEdit_w.text()),
-                         "box_height": int(self.lineEdit_h.text()),
-                         "tracking": self.checkBox_track.isChecked(),
-                         "compare_to_first": self.checkBox_compare_first.isChecked(),
-                         "chop_sec": int(self.lineEdit_chop_sec.text())
-                     },
-                     "extra": {
-                         "substract_type": self.comboBox_substract_col.currentText(),
-                         "substract_level": int(self.lineEdit_substract_lvl.text())
-                     },
-                     "actions": {
-                         "position": self.view_position.isChecked(),
-                         "position_x": self.view_position_x.isChecked(),
-                         "position_y": self.view_position_y.isChecked(),
-                         "phase": self.view_phase.isChecked(),
-                         "violin": self.view_violin.isChecked(),
-                         "violin_chop": self.view_violin_chop.isChecked(),
-                         "violin_all_on_one": self.view_viollin_all_on_one.isChecked()
-                     },
-                     "boxes": self.json_data["boxes"]
+            "parameters": {
+                "pixel_size": float(self.lineEdit_pix_size.text()),
+                "magnification": int(self.lineEdit_magn.text()),
+                "sub_pixel": int(self.lineEdit_sub_pix.text()),
+                "fps": int(self.lineEdit_fps.text()),
+                "start_frame": int(self.lineEdit_start_frame.text()),
+                "stop_frame": int(self.lineEdit_stop_frame.text()),
+                "box_width": int(self.lineEdit_w.text()),
+                "box_height": int(self.lineEdit_h.text()),
+                "tracking": self.checkBox_track.isChecked(),
+                "compare_to_first": self.checkBox_compare_first.isChecked(),
+                "chop_sec": int(self.lineEdit_chop_sec.text())
+            },
+            "extra": {
+                "substract_type": self.comboBox_substract_col.currentText(),
+                "substract_level": int(self.lineEdit_substract_lvl.text())
+            },
+            "actions": {
+                "position": self.view_position.isChecked(),
+                "position_x": self.view_position_x.isChecked(),
+                "position_y": self.view_position_y.isChecked(),
+                "phase": self.view_phase.isChecked(),
+                "violin": self.view_violin.isChecked(),
+                "violin_chop": self.view_violin_chop.isChecked(),
+                "violin_all_on_one": self.view_viollin_all_on_one.isChecked()
+            },
+            "boxes": self.json_data["boxes"]
         }
 
         with open('settings.json', 'w') as json_file:
@@ -481,9 +477,9 @@ class Main(QMainWindow, Ui_MainWindow):
         # print(self.solver_list)
         for solver in self.solver_list:
             utils.plot_results(shift_x=solver.shift_x, shift_y=solver.shift_y, shift_x_y_error=solver.shift_x_y_error,
-                         box_shift=solver.box_shift, fps=solver.fps, res=solver.res,
-                         output_basepath=self.output_basepath, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
-                         chop_duration=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
+                               box_shift=solver.box_shift, fps=solver.fps, res=solver.res,
+                               output_basepath=self.output_basepath, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
+                               chop_duration=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
 
         print("Plots shown.")
 
@@ -491,12 +487,12 @@ class Main(QMainWindow, Ui_MainWindow):
         for solver in self.solver_list:
             for j in range(len(solver.box_dict)):
                 utils.export_results(shift_x=solver.shift_x[j], shift_y=solver.shift_y[j], box_shift=solver.box_shift[j],
-                               fps=solver.fps, res=solver.res,
-                               w=solver.box_dict[j].rect._width, h=solver.box_dict[j].rect._height,
-                               z_std=solver.z_std[j],
-                               dz_rms=solver.z_rms[j],
-                               v=solver.v_rms[j],
-                               output_basepath=self.output_basepath + str(j))
+                                     fps=solver.fps, res=solver.res,
+                                     w=solver.box_dict[j].rect._width, h=solver.box_dict[j].rect._height,
+                                     z_std=solver.z_std[j],
+                                     dz_rms=solver.z_rms[j],
+                                     v=solver.v_rms[j],
+                                     output_basepath=self.output_basepath + str(j))
 
         print("Files exported.")
 
