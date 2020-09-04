@@ -135,8 +135,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
     plt.show()
 
 
-def export_results(shift_x, shift_y, box_shift, fps, res, w, h, z_std, dz_rms, v, output_target):
-    target = "%s_output.xlsx" % (output_target)
+def export_results(shift_x, shift_y, box_shift, fps, res, w, h, z_std, dz_rms, v, output_basepath):
+    target = "%s_output.xlsx" % (output_basepath)
     print("Exporting results to %s." % (target))
 
     df = pd.DataFrame({
