@@ -1,9 +1,7 @@
-import asyncio
 import decimal
-import math
 import os
-from threading import RLock
 
+import concurrent.futures
 import cv2
 import numpy as np
 import skimage.color
@@ -12,8 +10,6 @@ import skimage.registration
 
 import matplotlib.patches as patches
 from PyQt5.QtCore import QThread, pyqtSignal
-
-lock = RLock()
 
 
 class Solver(QThread):
@@ -116,25 +112,28 @@ class Solver(QThread):
 
         return image
 
-    async def _phase_cross_correlation_wrapper(self, base, current, upsample_factor):
+    def _phase_cross_correlation_wrapper(self, base, current, upsample_factor):
         current = self._filter_image_subset(current)
 
-        return current, *skimage.registration.phase_cross_correlation(base, current, upsample_factor=upsample_factor)
+        shift, error, phase = skimage.registration.phase_cross_correlation(base, current, upsample_factor=upsample_factor)
 
-    async def _run_async(self, parameters):
-        threads = []
-        for entry in parameters:
-            threads.append(self._phase_cross_correlation_wrapper(entry[0], entry[1], entry[2]))
+        return current, shift, error, phase
 
-        return await asyncio.gather(*threads)  # unpack list of threads
+    def _run_threading(self, parameters):
+        futures = []
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for entry in parameters:
+                future = executor.submit(self._phase_cross_correlation_wrapper, entry[0], entry[1], entry[2])
+                futures.append(future)
+
+        return [future.result() for future in futures]
 
     def _compute_phase_corr(self):  # compute the cross correlation for all frames for the selected polygon crop
         print("self.go_on is set to %s." % (self.go_on))
 
         images = []  # last image subimages array
 
-        with lock:  # store the first subimages for later comparison
-            frame_first = self._prepare_image(self.videodata.get_frame(0))
+        frame_first = self._prepare_image(self.videodata.get_frame(0))  # store the first subimages for later comparison
 
         for j in range(len(self.box_dict)):  # j iterates over all boxes
             images.append(self._filter_image_subset(self._get_image_subset(frame_first, j)))
@@ -159,8 +158,7 @@ class Solver(QThread):
         for i in range(self.start_frame + 1, self.stop_frame + 1):  # i iterates over all frames
             self.current_i = i
             if self.go_on:  # condition checked to be able to stop the thread
-                with lock:
-                    self.frame_n = self._prepare_image(self.videodata.get_frame(i))
+                self.frame_n = self._prepare_image(self.videodata.get_frame(i))
 
                 parameters = [None for _ in range(len(self.box_dict))]
                 for j in range(len(self.box_dict)):  # j iterates over all boxes
@@ -192,7 +190,8 @@ class Solver(QThread):
 
                     parameters[j] = [images[j], self._get_image_subset(self.frame_n, j), self.upsample_factor]
 
-                results = asyncio.run(self._run_async(parameters))
+                results = self._run_threading(parameters)
+
                 for j in range(len(self.box_dict)):
                     image_n, shift, error, phase = results[j]
                     shift[0], shift[1] = -shift[1], -shift[0]  # (-y, -x) → (x, y)
