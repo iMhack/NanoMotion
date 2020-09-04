@@ -37,7 +37,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.boxes_dict = []  # list of boxes to analyse
         self.plots_dict = {}  # list of plots to plot
         self.output_basepath = []
-        self.solver_list = []
+        self.solver = None
         self.basename = None
         self.orignalVideoLen = 0
         self.timer = 0
@@ -175,8 +175,8 @@ class Main(QMainWindow, Ui_MainWindow):
             box.disconnect()
         self.boxes_dict.clear()
 
-        for solver in self.solver_list:  # remove the arrows
-            solver.clear_annotations()
+        if self.solver is not None:
+            self.solver.clear_annotations()
 
         self.basename = None
 
@@ -419,26 +419,26 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.videodata is None:  # no video loaded, return gracefully
             return
 
-        for solver in self.solver_list:  # remove the arrows
-            solver.clear_annotations()
+        if self.solver is not None:  # remove the arrows
+            self.solver.clear_annotations()
 
-        self.solver_list.clear()
         self.saveParameters()
         self.output_basepath = utils.create_results_directory(self.fileName, "")
         print("Tracking: %s." % (self.checkBox_track.isChecked()))
-        solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
-                        box_dict=self.boxes_dict, solver_number=0,
-                        upsample_factor=int(self.lineEdit_sub_pix.text()),
-                        stop_frame=int(self.lineEdit_stop_frame.text()),
-                        start_frame=int(self.lineEdit_start_frame.text()),
-                        res=float(self.lineEdit_pix_size.text()),
-                        track=self.checkBox_track.isChecked(),
-                        compare_first=self.checkBox_compare_first.isChecked(),
-                        figure=self.figure
-                        )
-        self.solver_list.append(solver)
-        self.solver_list[0].progressChanged.connect(self.updateProgress)
-        self.solver_list[0].start()
+        self.solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
+                             box_dict=self.boxes_dict, solver_number=0,
+                             upsample_factor=int(self.lineEdit_sub_pix.text()),
+                             stop_frame=int(self.lineEdit_stop_frame.text()),
+                             start_frame=int(self.lineEdit_start_frame.text()),
+                             res=float(self.lineEdit_pix_size.text()),
+                             track=self.checkBox_track.isChecked(),
+                             compare_first=self.checkBox_compare_first.isChecked(),
+                             figure=self.figure
+                             )
+
+        self.solver.progressChanged.connect(self.updateProgress)
+        self.solver.start()
+
         self.figure.savefig(self.output_basepath + "boxes_selection.png")
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateProgress)
@@ -449,23 +449,26 @@ class Main(QMainWindow, Ui_MainWindow):
         try:
             print("Analysis stopped.")
             self.timer.stop()
-            for solver in self.solver_list:
-                solver.stop()
+            if self.solver is not None:
+                self.solver.stop()
         except Exception:  # no timer launched, return gracefully
             pass
 
     def updateProgress(self):
-        for s in self.solver_list:
-            if s.progress == 100:
+        if self.solver is not None:
+            if self.solver.progress == 100:
                 self.timer.stop()
 
             for j in range(len(self.boxes_dict)):
                 item = self.boxes.item(j)
                 item.setText("%d - %d%% (frame %d/%d)"
-                             % (j, s.progress, s.current_i - int(self.lineEdit_start_frame.text()), int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
+                             % (j,
+                                self.solver.progress,
+                                self.solver.current_i - int(self.lineEdit_start_frame.text()),
+                                int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
 
-            if s.progress == 100 or self.checkBox_live_preview.isChecked():
-                self.imshow.set_data(s.frame_n)
+            if self.solver.progress == 100 or self.checkBox_live_preview.isChecked():
+                self.imshow.set_data(self.solver.frame_n)
                 for r in self.boxes_dict:
                     r.update_from_solver()
                 self.figure.canvas.draw()
@@ -474,24 +477,35 @@ class Main(QMainWindow, Ui_MainWindow):
     def showResults(self):
         self.saveParameters()
 
-        # print(self.solver_list)
-        for solver in self.solver_list:
-            utils.plot_results(shift_x=solver.shift_x, shift_y=solver.shift_y, shift_x_y_error=solver.shift_x_y_error,
-                               box_shift=solver.box_shift, fps=solver.fps, res=solver.res,
-                               output_basepath=self.output_basepath, plots_dict=self.plots_dict, boxes_dict=self.boxes_dict,
-                               chop_duration=float(self.lineEdit_chop_sec.text()), start_frame=solver.start_frame, shift_p=solver.shift_p)
+        if self.solver is not None:
+            utils.plot_results(shift_x=self.solver.shift_x,
+                               shift_y=self.solver.shift_y,
+                               shift_p=self.solver.shift_p,
+                               shift_x_y_error=self.solver.shift_x_y_error,
+                               box_shift=self.solver.box_shift,
+                               fps=self.solver.fps,
+                               res=self.solver.res,
+                               output_basepath=self.output_basepath,
+                               plots_dict=self.plots_dict,
+                               boxes_dict=self.boxes_dict,
+                               chop_duration=float(self.lineEdit_chop_sec.text()),
+                               start_frame=self.solver.start_frame)
 
         print("Plots shown.")
 
     def exportResults(self):
-        for solver in self.solver_list:
-            for j in range(len(solver.box_dict)):
-                utils.export_results(shift_x=solver.shift_x[j], shift_y=solver.shift_y[j], box_shift=solver.box_shift[j],
-                                     fps=solver.fps, res=solver.res,
-                                     w=solver.box_dict[j].rect._width, h=solver.box_dict[j].rect._height,
-                                     z_std=solver.z_std[j],
-                                     dz_rms=solver.z_rms[j],
-                                     v=solver.v_rms[j],
+        if self.solver is not None:
+            for j in range(len(self.solver.box_dict)):
+                utils.export_results(shift_x=self.solver.shift_x[j],
+                                     shift_y=self.solver.shift_y[j],
+                                     box_shift=self.solver.box_shift[j],
+                                     fps=self.solver.fps,
+                                     res=self.solver.res,
+                                     w=self.solver.box_dict[j].rect._width,
+                                     h=self.solver.box_dict[j].rect._height,
+                                     z_std=self.solver.z_std[j],
+                                     dz_rms=self.solver.z_rms[j],
+                                     v=self.solver.v_rms[j],
                                      output_basepath=self.output_basepath + str(j))
 
         print("Files exported.")

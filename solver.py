@@ -1,8 +1,7 @@
 import decimal
-import math
 import os
-from threading import RLock
 
+import concurrent.futures
 import cv2
 import numpy as np
 import skimage.color
@@ -11,8 +10,6 @@ import skimage.registration
 
 import matplotlib.patches as patches
 from PyQt5.QtCore import QThread, pyqtSignal
-
-lock = RLock()
 
 
 class Solver(QThread):
@@ -115,13 +112,28 @@ class Solver(QThread):
 
         return image
 
+    def _phase_cross_correlation_wrapper(self, base, current, upsample_factor):
+        current = self._filter_image_subset(current)
+
+        shift, error, phase = skimage.registration.phase_cross_correlation(base, current, upsample_factor=upsample_factor)
+
+        return current, shift, error, phase
+
+    def _run_threading(self, parameters):
+        futures = []
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for entry in parameters:
+                future = executor.submit(self._phase_cross_correlation_wrapper, entry[0], entry[1], entry[2])
+                futures.append(future)
+
+        return [future.result() for future in futures]
+
     def _compute_phase_corr(self):  # compute the cross correlation for all frames for the selected polygon crop
         print("self.go_on is set to %s." % (self.go_on))
 
         images = []  # last image subimages array
 
-        with lock:  # store the first subimages for later comparison
-            frame_first = self._prepare_image(self.videodata.get_frame(0))
+        frame_first = self._prepare_image(self.videodata.get_frame(0))  # store the first subimages for later comparison
 
         for j in range(len(self.box_dict)):  # j iterates over all boxes
             images.append(self._filter_image_subset(self._get_image_subset(frame_first, j)))
@@ -146,9 +158,9 @@ class Solver(QThread):
         for i in range(self.start_frame + 1, self.stop_frame + 1):  # i iterates over all frames
             self.current_i = i
             if self.go_on:  # condition checked to be able to stop the thread
-                with lock:
-                    self.frame_n = self._prepare_image(self.videodata.get_frame(i))
+                self.frame_n = self._prepare_image(self.videodata.get_frame(i))
 
+                parameters = [None for _ in range(len(self.box_dict))]
                 for j in range(len(self.box_dict)):  # j iterates over all boxes
                     # Propagate previous box shifts
                     self.box_shift[j][i][0] = self.box_shift[j][i - 1][0]
@@ -176,9 +188,12 @@ class Solver(QThread):
                         self.box_dict[j].y_rect += to_shift[1]
                         self._crop_coord(j)
 
-                    image_n = self._filter_image_subset(self._get_image_subset(self.frame_n, j))
+                    parameters[j] = [images[j], self._get_image_subset(self.frame_n, j), self.upsample_factor]
 
-                    shift, error, diffphase = skimage.registration.phase_cross_correlation(images[j], image_n, upsample_factor=self.upsample_factor)
+                results = self._run_threading(parameters)
+
+                for j in range(len(self.box_dict)):
+                    image_n, shift, error, phase = results[j]
                     shift[0], shift[1] = -shift[1], -shift[0]  # (-y, -x) → (x, y)
 
                     # shift[0] is the x displacement computed by comparing the first (if self.compare_first is True) or
@@ -197,14 +212,16 @@ class Solver(QThread):
                     if self.compare_first:
                         relative_shift = [
                             shift[0] - self.shift_x[j][i - 1],
-                            shift[1] - self.shift_y[j][i - 1]
+                            shift[1] - self.shift_y[j][i - 1],
+                            phase - self.shift_p[j][i - 1]
                         ]
 
                         # computed_error = error
                     else:
                         relative_shift = [
                             shift[0],
-                            shift[1]
+                            shift[1],
+                            phase
                         ]
 
                         # computed_error = error + self.shift_x_y_error[j][i - 1]
@@ -214,10 +231,11 @@ class Solver(QThread):
 
                     self.shift_x[j][i] = self.shift_x[j][i - 1] + relative_shift[0]
                     self.shift_y[j][i] = self.shift_y[j][i - 1] + relative_shift[1]
+                    self.shift_p[j][i] = self.shift_p[j][i - 1] + relative_shift[2]
 
                     self.shift_x_y_error[j][i] = computed_error
 
-                    # TODO: work upon diffphase
+                    # TODO: phase difference
                     # TODO: take into account rotation (https://scikit-image.org/docs/stable/auto_examples/registration/plot_register_rotation.html).
 
                     self._draw_arrow(j, self.shift_x[j][i] + self.box_shift[j][i][0], self.shift_y[j][i] + self.box_shift[j][i][1])
@@ -229,10 +247,7 @@ class Solver(QThread):
                     if not self.compare_first:  # store the current image to be compared later
                         images[j] = image_n
 
-                    # TODO: adapt outliers warning threshold
-                    threshold = 10
-                    if i in self.debug_frames or abs(relative_shift[0]) > threshold or abs(relative_shift[1]) > threshold:
-                        print("WARNING: shift > threshold (%f)." % (threshold))
+                    if i in self.debug_frames:
                         print("Box %d, frame %d." % (j, i))
                         print("Previous shift: %f, %f." % (self.shift_x[j][i - 1], self.shift_y[j][i - 1]))
                         print("Current shift: %f, %f." % (shift[0], shift[1]))
@@ -240,7 +255,6 @@ class Solver(QThread):
 
                         os.makedirs("./debug/", exist_ok=True)
 
-                        # TODO: store original image (before filtering)
                         # Previous image (i - 1 or 0): images[j]
                         if self.compare_first:
                             cv2.imwrite("./debug/box_%d-0.png" % (j), images[j])
@@ -250,7 +264,7 @@ class Solver(QThread):
                         else:
                             cv2.imwrite(("./debug/box_%d-%d_p.png" % (j, i - 1)), images[j])
 
-                        # Current image (i): image_n
+                        # Current image (i): parameters[j][0]
                         cv2.imwrite(("./debug/box_%d-%d.png" % (j, i)), image_n)
 
                 self.progress = int(((i - self.start_frame) / length) * 100)
@@ -282,6 +296,7 @@ class Solver(QThread):
                 self.col_max.append(int(self.box_dict[i].x_rect) + self.box_dict[i].rect._width)
         else:
             i = which
+
             self.row_min[i] = int(self.box_dict[i].y_rect)
             self.row_max[i] = int(self.box_dict[i].y_rect) + self.box_dict[i].rect._height
             self.col_min[i] = int(self.box_dict[i].x_rect)
