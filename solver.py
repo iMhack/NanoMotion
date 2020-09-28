@@ -1,7 +1,7 @@
+import concurrent.futures
 import decimal
 import os
 
-import concurrent.futures
 import cv2
 import numpy as np
 import skimage.color
@@ -155,10 +155,18 @@ class Solver(QThread):
         length = self.stop_frame - self.start_frame
         progress_pivot = 0 - 5
 
+        next_frame = None
         for i in range(self.start_frame + 1, self.stop_frame + 1):  # i iterates over all frames
             self.current_i = i
             if self.go_on:  # condition checked to be able to stop the thread
-                self.frame_n = self._prepare_image(self.videodata.get_frame(i))
+                if next_frame is None:
+                    self.frame_n = self._prepare_image(self.videodata.get_frame(i))
+                else:
+                    self.frame_n = self._prepare_image(next_frame.result())
+
+                    if i < self.stop_frame:  # pooling the next image helps when analyzing a low number of cells
+                        with concurrent.futures.ThreadPoolExecutor() as executor:
+                            next_frame = executor.submit(self.videodata.get_frame, i + 1)
 
                 parameters = [None for _ in range(len(self.box_dict))]
                 for j in range(len(self.box_dict)):  # j iterates over all boxes
@@ -166,9 +174,9 @@ class Solver(QThread):
                     self.box_shift[j][i][0] = self.box_shift[j][i - 1][0]
                     self.box_shift[j][i][1] = self.box_shift[j][i - 1][1]
 
-                    # Shift before analysis
+                    # Shift before analysis (for the next frame)
                     to_shift = [0, 0]
-                    if self.track and (abs(self.cumulated_shift[j][0]) >= 1.2 or abs(self.cumulated_shift[j][1]) >= 1.2):
+                    if self.track and (abs(self.cumulated_shift[j][0]) >= 1.2 or abs(self.cumulated_shift[j][1]) >= 1.2):  # arbitrary value (1.2)
                         to_shift = [
                             self._close_to_zero(self.cumulated_shift[j][0]),
                             self._close_to_zero(self.cumulated_shift[j][1])

@@ -121,8 +121,9 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
             plt.savefig(output_target + "_p.png")
 
-    print(np.shape(shift_length_all))
     if (plots_dict["view_viollin_all_on_one"]):
+        print(np.shape(shift_length_all))
+
         plt.figure(num=output_target + "Violins")
         plt.title("Violins, #0 to #%d" % (j))
         plt.xlabel("Zone #")
