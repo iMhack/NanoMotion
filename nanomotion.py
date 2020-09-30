@@ -99,6 +99,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.cursor = None
         self.plotSelection()  # set options to the booleans wanted even if the user didn't change anything
 
+        self.reset_needed = False
+
     def startFrame(self, update=True):
         if self.orignalVideoLen != float('inf'):
             if int(self.lineEdit_start_frame.text()) >= self.orignalVideoLen:
@@ -163,8 +165,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def browseFiles(self):
         self.fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
-                                                       "All Files (*);;mp4 movie (*.mp4)")
-        self.goodFile = 1
+                                                       "All Files (*);mp4 movie (*.mp4)")
         self.loadAndShowFile()
 
     def unloadFile(self):
@@ -184,6 +185,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.canvas.close()
         self.mplvl.removeWidget(self.toolbar)
         self.toolbar.close()
+
+        self.reset_needed = False
 
     def loadAndShowFile(self):
         try:
@@ -421,6 +424,18 @@ class Main(QMainWindow, Ui_MainWindow):
 
         if self.solver is not None:  # remove the arrows
             self.solver.clear_annotations()
+
+        if self.reset_needed:
+            self.boxes.clear()
+
+            for box in self.boxes_dict:  # remove the boxes
+                box.disconnect()
+            self.boxes_dict.clear()
+
+            for box in self.saved_boxes.values():
+                self._addRectangle(box["number"], box["x0"], box["y0"], box["width"], box["height"])
+
+        self.reset_needed = True
 
         self.saveParameters()
         self.output_basepath = utils.create_results_directory(self.fileName, "")

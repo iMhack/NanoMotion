@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 
+import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -39,6 +40,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         ls = "dotted"
         fmt = "o"
+        markersize = 0.9
         if (plots_dict["view_position_x"]):
             plt.figure(num=output_target + "x(t), um(s)")
             plt.title("x(t), #%d" % (j))
@@ -46,7 +48,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.ylabel("x, um")
 
             plt.grid()
-            plt.errorbar([frame / fps for frame in range(len(my_shift_x))], my_shift_x_um, ls=ls, fmt=fmt,
+            plt.errorbar([frame / fps for frame in range(len(my_shift_x))], my_shift_x_um, ls=ls, fmt=fmt, markersize=markersize,
                          yerr=my_shift_x_um_error)
 
             plt.savefig(output_target + "_x(t).png")
@@ -58,7 +60,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.ylabel("y, um")
 
             plt.grid()
-            plt.errorbar([frame / fps for frame in range(len(my_shift_y))], my_shift_y_um, ls=ls, fmt=fmt,
+            plt.errorbar([frame / fps for frame in range(len(my_shift_y))], my_shift_y_um, ls=ls, fmt=fmt, markersize=markersize,
                          yerr=my_shift_y_um_error)
 
             plt.savefig(output_target + "_y(t).png")
@@ -106,7 +108,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.ylabel("y, um")
 
             plt.grid()
-            plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt)  # , yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
+            plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt, markersize=markersize)  # , yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
 
             plt.savefig(output_target + "_y(x).png")
 
@@ -124,14 +126,14 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
     if (plots_dict["view_viollin_all_on_one"]):
         print(np.shape(shift_length_all))
 
-        plt.figure(num=output_target + "Violins")
+        figure = plt.figure(num=output_target + "Violins")
         plt.title("Violins, #0 to #%d" % (j))
         plt.xlabel("Zone #")
         plt.ylabel("step length, um")
 
-        sns.violinplot(data=shift_length_all, inner="stick")
+        sns.violinplot(data=shift_length_all, inner="quartiles")
 
-        plt.savefig(output_target + "_violin_all.png")
+        plt.savefig("%s%s" % (output_basepath, "_violin_all.png"))
 
     plt.show()
 
