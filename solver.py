@@ -246,8 +246,6 @@ class Solver(QThread):
                     # TODO: phase difference
                     # TODO: take into account rotation (https://scikit-image.org/docs/stable/auto_examples/registration/plot_register_rotation.html).
 
-                    self._draw_arrow(j, self.shift_x[j][i] + self.box_shift[j][i][0], self.shift_y[j][i] + self.box_shift[j][i][1])
-
                     # if j == 1:
                     #     print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f."
                     #           % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
@@ -279,6 +277,8 @@ class Solver(QThread):
                 if self.progress > progress_pivot + 4:
                     print("%d%% (frame %d/%d)." % (self.progress, i - self.start_frame, self.stop_frame - self.start_frame))
                     progress_pivot = self.progress
+
+                    self._draw_arrow(j, self.shift_x[j][i] + self.box_shift[j][i][0], self.shift_y[j][i] + self.box_shift[j][i][1])
             else:
                 return
 

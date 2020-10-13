@@ -228,8 +228,7 @@ class Main(QMainWindow, Ui_MainWindow):
         except Exception:
             self.imshow = sub.imshow(skimage.color.rgb2gray(self.videodata.get_frame(0)), cmap='gray')
 
-        self.basename = os.path.basename(self.fileName)
-        self.views.addItem(self.basename)
+        self.views.addItem(self.fileName)
         self.canvas = FigureCanvas(self.figure)
         self.canvas.mpl_connect('motion_notify_event', self.mouse_event)
         self.mplvl.addWidget(self.canvas)
