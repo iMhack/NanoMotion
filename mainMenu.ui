@@ -514,6 +514,16 @@
           </property>
          </widget>
         </item>
+        <item row="15" column="0">
+         <widget class="QCheckBox" name="checkBox_filter">
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>Filter images</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
@@ -583,6 +593,8 @@
      <addaction name="view_violin_chop"/>
      <addaction name="view_viollin_all_on_one"/>
      <addaction name="view_phase"/>
+     <addaction name="view_step_length"/>
+     <addaction name="view_waves"/>
     </widget>
     <addaction name="actionSubstract"/>
     <addaction name="menuView_plot"/>
@@ -741,6 +753,22 @@
    </property>
    <property name="text">
     <string>Phase</string>
+   </property>
+  </action>
+  <action name="view_step_length">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Step length</string>
+   </property>
+  </action>
+  <action name="view_waves">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Waves</string>
    </property>
   </action>
  </widget>

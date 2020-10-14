@@ -33,6 +33,7 @@ class Main(QMainWindow, Ui_MainWindow):
         super(Main, self).__init__()
         self.setupUi(self)
         self.figure = None
+        self.opened_plots = []
         self.saved_boxes = {}
         self.boxes_dict = []  # list of boxes to analyse
         self.plots_dict = {}  # list of plots to plot
@@ -54,6 +55,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.view_violin.triggered.connect(self.plotSelection)
         self.view_viollin_all_on_one.triggered.connect(self.plotSelection)
         self.view_violin_chop.triggered.connect(self.plotSelection)
+        self.view_step_length.triggered.connect(self.plotSelection)
+        self.view_waves.triggered.connect(self.plotSelection)
 
         self.actionAdd_box = QtWidgets.QAction()
         self.actionAdd_box.setObjectName('actionAdd_box')
@@ -72,7 +75,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionStart_solver = QtWidgets.QAction()
         self.actionStart_solver.setObjectName('actionStart_solver')
         self.menubar.addAction(self.actionStart_solver)
-        self.actionStart_solver.setText('Start Analysis')
+        self.actionStart_solver.setText('Start analysis')
         self.actionStart_solver.triggered.connect(self.startAnalysis)
         self.actionStart_solver.setShortcut("S")
 
@@ -86,8 +89,14 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionStop_solver = QtWidgets.QAction()
         self.actionStop_solver.setObjectName('actionStop_solver')
         self.menubar.addAction(self.actionStop_solver)
-        self.actionStop_solver.setText('Stop Analysis')
+        self.actionStop_solver.setText('Stop analysis')
         self.actionStop_solver.triggered.connect(self.stopAnalysis)
+
+        self.actionClose_results = QtWidgets.QAction()
+        self.actionClose_results.setObjectName('actionClose_results')
+        self.menubar.addAction(self.actionClose_results)
+        self.actionClose_results.setText('Close plots')
+        self.actionClose_results.triggered.connect(self.closeResults)
 
         self.json_data = {}
 
@@ -348,9 +357,10 @@ class Main(QMainWindow, Ui_MainWindow):
             self.lineEdit_stop_frame.setText(str(self.json_data["parameters"]["stop_frame"]))
             self.lineEdit_w.setText(str(self.json_data["parameters"]["box_width"]))
             self.lineEdit_h.setText(str(self.json_data["parameters"]["box_height"]))
+            self.lineEdit_chop_sec.setText(str(self.json_data["parameters"]["chop_sec"]))
             self.checkBox_track.setChecked(self.json_data["parameters"]["tracking"])
             self.checkBox_compare_first.setChecked(self.json_data["parameters"]["compare_to_first"])
-            self.lineEdit_chop_sec.setText(str(self.json_data["parameters"]["chop_sec"]))
+            self.checkBox_filter.setChecked(self.json_data["parameters"]["filter"])
 
             self.comboBox_substract_col.setCurrentText(self.json_data["extra"]["substract_type"])
             for i in plt.colormaps():
@@ -369,6 +379,8 @@ class Main(QMainWindow, Ui_MainWindow):
             self.view_violin.setChecked(self.json_data["actions"]["violin"])
             self.view_violin_chop.setChecked(self.json_data["actions"]["violin_chop"])
             self.view_viollin_all_on_one.setChecked(self.json_data["actions"]["violin_all_on_one"])
+            self.view_step_length.setChecked(self.json_data["actions"]["step_length"])
+            self.view_waves.setChecked(self.json_data["actions"]["waves"])
 
             print("Parameters loaded.")
 
@@ -390,9 +402,10 @@ class Main(QMainWindow, Ui_MainWindow):
                 "stop_frame": int(self.lineEdit_stop_frame.text()),
                 "box_width": int(self.lineEdit_w.text()),
                 "box_height": int(self.lineEdit_h.text()),
+                "chop_sec": int(self.lineEdit_chop_sec.text()),
                 "tracking": self.checkBox_track.isChecked(),
                 "compare_to_first": self.checkBox_compare_first.isChecked(),
-                "chop_sec": int(self.lineEdit_chop_sec.text())
+                "filter": self.checkBox_filter.isChecked()
             },
             "extra": {
                 "substract_type": self.comboBox_substract_col.currentText(),
@@ -405,7 +418,9 @@ class Main(QMainWindow, Ui_MainWindow):
                 "phase": self.view_phase.isChecked(),
                 "violin": self.view_violin.isChecked(),
                 "violin_chop": self.view_violin_chop.isChecked(),
-                "violin_all_on_one": self.view_viollin_all_on_one.isChecked()
+                "violin_all_on_one": self.view_viollin_all_on_one.isChecked(),
+                "step_length": self.view_step_length.isChecked(),
+                "waves": self.view_waves.isChecked()
             },
             "boxes": self.json_data["boxes"]
         }
@@ -447,6 +462,7 @@ class Main(QMainWindow, Ui_MainWindow):
                              res=float(self.lineEdit_pix_size.text()),
                              track=self.checkBox_track.isChecked(),
                              compare_first=self.checkBox_compare_first.isChecked(),
+                             filter=self.checkBox_filter.isChecked(),
                              figure=self.figure
                              )
 
@@ -492,20 +508,31 @@ class Main(QMainWindow, Ui_MainWindow):
         self.saveParameters()
 
         if self.solver is not None:
-            utils.plot_results(shift_x=self.solver.shift_x,
-                               shift_y=self.solver.shift_y,
-                               shift_p=self.solver.shift_p,
-                               shift_x_y_error=self.solver.shift_x_y_error,
-                               box_shift=self.solver.box_shift,
-                               fps=self.solver.fps,
-                               res=self.solver.res,
-                               output_basepath=self.output_basepath,
-                               plots_dict=self.plots_dict,
-                               boxes_dict=self.boxes_dict,
-                               chop_duration=float(self.lineEdit_chop_sec.text()),
-                               start_frame=self.solver.start_frame)
+            self.opened_plots = utils.plot_results(shift_x=self.solver.shift_x,
+                                                   shift_y=self.solver.shift_y,
+                                                   shift_p=self.solver.shift_p,
+                                                   shift_x_y_error=self.solver.shift_x_y_error,
+                                                   box_shift=self.solver.box_shift,
+                                                   fps=self.solver.fps,
+                                                   res=self.solver.res,
+                                                   output_basepath=self.output_basepath,
+                                                   plots_dict=self.plots_dict,
+                                                   boxes_dict=self.boxes_dict,
+                                                   chop_duration=float(self.lineEdit_chop_sec.text()),
+                                                   start_frame=self.solver.start_frame)
 
-        print("Plots shown.")
+        print("%d plots shown." % (len(self.opened_plots)))
+
+    def closeResults(self):
+        for figure in self.opened_plots:
+            try:
+                plt.close(figure)
+            except Exception:
+                pass
+
+        print("Closed plots.")
+
+        self.opened_plots = []
 
     def exportResults(self):
         if self.solver is not None:
@@ -517,8 +544,6 @@ class Main(QMainWindow, Ui_MainWindow):
                                      res=self.solver.res,
                                      w=self.solver.box_dict[j].rect._width,
                                      h=self.solver.box_dict[j].rect._height,
-                                     z_std=self.solver.z_std[j],
-                                     dz_rms=self.solver.z_rms[j],
                                      v=self.solver.v_rms[j],
                                      output_basepath=self.output_basepath + str(j))
 

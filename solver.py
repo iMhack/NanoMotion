@@ -1,5 +1,4 @@
 import concurrent.futures
-import decimal
 import os
 
 import cv2
@@ -16,7 +15,7 @@ class Solver(QThread):
     progressChanged = pyqtSignal(int, int, object)
 
     def __init__(self, videodata, fps, res, box_dict, solver_number, start_frame, stop_frame, upsample_factor,
-                 track, compare_first, figure):
+                 track, compare_first, filter, figure):
         QThread.__init__(self)
         self.solver_number = solver_number  # store the ID of the solver
         self.videodata = videodata  # store an access to the video file to iterate over the frames
@@ -27,6 +26,7 @@ class Solver(QThread):
         self.upsample_factor = upsample_factor
         self.track = track
         self.compare_first = compare_first
+        self.filter = filter
 
         self.start_frame = start_frame
         self.stop_frame = stop_frame
@@ -41,10 +41,6 @@ class Solver(QThread):
         self.row_max = []
         self.col_min = []
         self.col_max = []
-
-        self.z_std = []
-        self.z_rms = []
-        self.v_rms = []
 
         self.shift_x = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.shift_y = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
@@ -63,8 +59,6 @@ class Solver(QThread):
         try:
             self._crop_coord()
             self._compute_phase_corr()
-            self.get_z_delta_rms()
-            self.get_z_std()
         except UserWarning:
             self.stop()
 
@@ -107,7 +101,7 @@ class Solver(QThread):
         return image[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]
 
     def _filter_image_subset(self, image):
-        if len(self.debug_frames) == 0:
+        if self.filter and len(self.debug_frames) == 0:
             image = skimage.filters.difference_of_gaussians(image, 1, 25)
 
         return image
@@ -309,68 +303,3 @@ class Solver(QThread):
             self.row_max[i] = int(self.box_dict[i].y_rect) + self.box_dict[i].rect._height
             self.col_min[i] = int(self.box_dict[i].x_rect)
             self.col_max[i] = int(self.box_dict[i].x_rect) + self.box_dict[i].rect._width
-
-    def get_z_std(self):
-        self.z_std = self._z_std_compute()
-        return self.z_std
-
-    def _z_std_compute(self):
-        z_dec = []
-
-        for j in range(len(self.box_dict)):
-            print("Computed std for box %s." % (j))
-            x = [i * self.res for i in self.shift_x[j]]
-            y = [i * self.res for i in self.shift_y[j]]
-            z = np.sqrt((np.std(x)) ** 2 + (np.std(y)) ** 2)
-            z_dec.append(decimal.Decimal(str(z)).quantize(decimal.Decimal('0.001'),
-                                                          rounding=decimal.ROUND_HALF_UP))  # special Decimal class for the correct rounding
-
-        return z_dec  # rounding, leaves 3 digits after comma
-
-    def get_z_delta_rms(self):
-        self.z_rms, self.v_rms = self._z_delta_rms_compute()
-
-        return self.z_rms, self.v_rms
-
-    def _z_delta_rms_compute(self):  # TODO: modify
-        z_tot_dec = []
-        v_dec = []
-
-        for j in range(len(self.box_dict)):
-            x_j = self.shift_x[j]
-            y_j = self.shift_y[j]
-
-            # if x_j or y_j is None:  # analysis stopped, return gracefully
-            #     raise UserWarning("Analysis stopped.")
-
-            x = []
-            for i in x_j:
-                if i is None:
-                    raise UserWarning("Analysis stopped.")
-                else:
-                    x.append(i * self.res)
-
-            y = []
-            for i in y_j:
-                if i is None:
-                    raise UserWarning("Analysis stopped.")
-                else:
-                    y.append(i * self.res)
-
-            dx = []
-            dy = []
-            dz = []
-
-            for i in range(1, len(x)):
-                dx.append(x[i] - x[i - 1])
-                dy.append(y[i] - y[i - 1])
-                dz.append(np.sqrt(dx[i - 1] ** 2 + dy[i - 1] ** 2))
-
-            z_tot = np.sum(dz)
-            v = (self.fps / (len(x) - 1)) * z_tot
-            z_tot_dec.append(decimal.Decimal(str(z_tot)).quantize(decimal.Decimal('0.001'),
-                                                                  rounding=decimal.ROUND_HALF_UP))  # special Decimal class for the correct rounding
-            v_dec.append(decimal.Decimal(str(v)).quantize(decimal.Decimal('0.001'),
-                                                          rounding=decimal.ROUND_HALF_UP))  # special Decimal class for the correct rounding
-
-        return z_tot_dec, v_dec  # rounding, leaves 3 digits after comma

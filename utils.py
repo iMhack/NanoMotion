@@ -9,14 +9,25 @@ import pandas as pd
 import seaborn as sns
 
 
+def adjacent_values(vals, q1, q3):
+    upper_adjacent_value = q3 + (q3 - q1) * 1.5
+    upper_adjacent_value = np.clip(upper_adjacent_value, q3, vals[-1])
+
+    lower_adjacent_value = q1 - (q3 - q1) * 1.5
+    lower_adjacent_value = np.clip(lower_adjacent_value, vals[0], q1)
+    return lower_adjacent_value, upper_adjacent_value
+
+
 def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res, output_basepath, plots_dict, boxes_dict, chop=False,
                  chop_duration=0, start_frame=0):
     print("Started plotting results.")
+    opened_plots = []
     shift_length_all = []
 
     for j in range(len(boxes_dict)):
         my_shift_x = shift_x[j]
         my_shift_y = shift_y[j]
+        my_shift_p = shift_p[j]
         my_shift_x_y_error = shift_x_y_error[j]
         my_box_shift = box_shift[j]
 
@@ -30,19 +41,21 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         my_shift_x_um_error = [e * x for e, x in zip(my_shift_x_y_error, my_shift_x_um)]
         my_shift_y_um_error = [e * y for e, y in zip(my_shift_x_y_error, my_shift_y_um)]
-        my_shift_p = shift_p[j]
 
         output_target = "%s%d" % (output_basepath, j)
 
         shift_x_step_um = [my_shift_x_um[i + 1] - my_shift_x_um[i] for i in range(len(my_shift_x_um) - 1)]
         shift_y_step_um = [my_shift_y_um[i + 1] - my_shift_y_um[i] for i in range(len(my_shift_y_um) - 1)]
-        shift_length_step_um = np.sqrt(np.square(shift_x_step_um) + np.square(shift_y_step_um))
 
-        ls = "dotted"
+        shift_length_step_um = []
+        for i in range(len(shift_x_step_um)):
+            shift_length_step_um.append(math.sqrt(math.pow(shift_x_step_um[i], 2) + math.pow(shift_y_step_um[i], 2)))
+
+        ls = "--"
         fmt = "o"
-        markersize = 0.9
-        if (plots_dict["view_position_x"]):
-            plt.figure(num=output_target + "x(t), um(s)")
+        markersize = 4
+        if plots_dict["view_position_x"]:
+            figure = plt.figure(num=output_target + "x(t), um(s)")
             plt.title("x(t), #%d" % (j))
             plt.xlabel("t, s")
             plt.ylabel("x, um")
@@ -52,9 +65,10 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
                          yerr=my_shift_x_um_error)
 
             plt.savefig(output_target + "_x(t).png")
+            opened_plots.append(figure)
 
-        if (plots_dict["view_position_y"]):
-            plt.figure(num=output_target + "y(t), um(s)")
+        if plots_dict["view_position_y"]:
+            figure = plt.figure(num=output_target + "y(t), um(s)")
             plt.title("y(t), #%d" % (j))
             plt.xlabel("t, s")
             plt.ylabel("y, um")
@@ -64,24 +78,26 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
                          yerr=my_shift_y_um_error)
 
             plt.savefig(output_target + "_y(t).png")
+            opened_plots.append(figure)
 
-        if (plots_dict["view_violin"]):
-            plt.figure(num=output_target + "violin of step length")
+        if plots_dict["view_violin"]:
+            figure = plt.figure(num=output_target + "violin of step length")
             plt.title("Violin, #%d" % (j))
             plt.ylabel("step length, um")
 
             sns.violinplot(data=shift_length_step_um, inner="stick")
 
             plt.savefig(output_target + "_violin.png")
+            opened_plots.append(figure)
 
-        if (plots_dict["view_violin_chop"]):
+        if plots_dict["view_violin_chop"]:
             number_of_frame_in_a_chop = math.floor(chop_duration * fps)
             number_of_full_chops = math.floor(len(shift_length_step_um) / number_of_frame_in_a_chop)
 
             if number_of_full_chops < 1:
                 print("WARNING: chop duration would exceed total number of frames.")
             else:
-                plt.figure(num=output_target + "violin chopped of step length")
+                figure = plt.figure(num=output_target + "violin chopped of step length")
                 plt.title("Violin #%d chopped every %d sec" % (j, chop_duration))
                 plt.xlabel("frame range")
                 plt.ylabel("step length, um")
@@ -97,23 +113,25 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
                 g.set_xticklabels(labels, rotation=30)
 
                 plt.savefig(output_target + "_violin_chopped.png")
+                opened_plots.append(figure)
 
-        if (plots_dict["view_viollin_all_on_one"]):
-            shift_length_all.append(shift_length_step_um)
-
-        if (plots_dict["view_position"]):
-            plt.figure(num=output_target + "y(x), um(um)")
+        if plots_dict["view_position"]:
+            figure = plt.figure(num=output_target + "y(x), um(um)")
             plt.title("y(x), #%d" % (j))
             plt.xlabel("x, um")
             plt.ylabel("y, um")
 
             plt.grid()
             plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt, markersize=markersize)  # , yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
+            axe = plt.gca()
+            axe.set_xlim([-2, 2])
+            axe.set_ylim([-2, 2])
 
             plt.savefig(output_target + "_y(x).png")
+            opened_plots.append(figure)
 
-        if (plots_dict["view_phase"]):
-            plt.figure(num=output_target + "phase")
+        if plots_dict["view_phase"]:
+            figure = plt.figure(num=output_target + "phase")
             plt.title("Phase, #%d" % (j))
             plt.xlabel("Frame #")
             plt.ylabel("Phase")
@@ -122,23 +140,75 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.plot(my_shift_p)
 
             plt.savefig(output_target + "_p.png")
+            opened_plots.append(figure)
 
-    if (plots_dict["view_viollin_all_on_one"]):
+        if plots_dict["view_step_length"]:
+            figure = plt.figure(num=output_target + "steps")
+            plt.title("Steps, #%d" % (j))
+            plt.xlabel("t, s")
+            plt.ylabel("length, um")
+
+            plt.grid()
+            plt.errorbar([frame / fps for frame in range(len(shift_length_step_um))], shift_length_step_um, ls=ls, fmt=fmt, markersize=markersize)
+
+            plt.savefig(output_target + "_p.png")
+            opened_plots.append(figure)
+
+        if plots_dict["view_viollin_all_on_one"]:
+            shift_length_all.append(shift_length_step_um)
+
+    if plots_dict["view_viollin_all_on_one"]:
         print(np.shape(shift_length_all))
 
-        figure = plt.figure(num=output_target + "Violins")
-        plt.title("Violins, #0 to #%d" % (j))
+        figure = plt.figure(num=output_target + "Violins (seaborn)")
+        plt.title("Violins (seaborn), #0 to #%d" % (j))
         plt.xlabel("Zone #")
         plt.ylabel("step length, um")
 
         sns.violinplot(data=shift_length_all, inner="quartiles")
+        axe = plt.gca()
+        axe.set_ylim([-1, 1])
 
-        plt.savefig("%s%s" % (output_basepath, "_violin_all.png"))
+        plt.savefig("%s%s" % (output_basepath, "_violin_all_seaborn.png"))
+        opened_plots.append(figure)
+
+    if plots_dict["view_waves"]:  # TODO: use an "experimental" flag
+        print(np.shape(shift_length_all))
+
+        figure = plt.figure(num=output_target + "Violins (matplotlib)")
+        plt.title("Violins (matplotlib), #0 to #%d" % (j))
+        plt.xlabel("Zone #")
+        plt.ylabel("step length, um")
+
+        parts = plt.violinplot(shift_length_all, showmeans=False, showextrema=False, showmedians=False)
+        axe = plt.gca()
+        axe.set_ylim([-1, 1])
+
+        for pc in parts['bodies']:
+            pc.set_facecolor('#D43F3A')
+            pc.set_edgecolor('black')
+            pc.set_alpha(1)
+
+        quartile1, medians, quartile3 = np.percentile(shift_length_all, [25, 50, 75], axis=1)
+        whiskers = np.array([
+            adjacent_values(sorted_array, q1, q3)
+            for sorted_array, q1, q3 in zip(shift_length_all, quartile1, quartile3)])
+        whiskers_min, whiskers_max = whiskers[:, 0], whiskers[:, 1]
+
+        inds = np.arange(1, len(medians) + 1)
+        axe.scatter(inds, medians, marker='o', color='white', s=30, zorder=3)
+        axe.vlines(inds, quartile1, quartile3, color='k', linestyle='-', lw=5)
+        axe.vlines(inds, whiskers_min, whiskers_max, color='k', linestyle='-', lw=1)
+
+        plt.savefig("%s%s" % (output_basepath, "_violin_all_matplotlib.png"))
+        opened_plots.append(figure)
 
     plt.show()
 
+    return opened_plots  # TODO: fix return
 
-def export_results(shift_x, shift_y, box_shift, fps, res, w, h, z_std, dz_rms, v, output_basepath):
+
+def export_results(shift_x, shift_y, box_shift, fps, res, w, h, v, output_basepath):
     target = "%s_output.xlsx" % (output_basepath)
     print("Exporting results to %s." % (target))
 
@@ -154,16 +224,14 @@ def export_results(shift_x, shift_y, box_shift, fps, res, w, h, z_std, dz_rms, v
     })
 
     df = pd.concat([df, pd.DataFrame({
-        "z std, um": [z_std],
-        "total z, um": [dz_rms],
         "v, um/s": [v],
         "window, px": [str(w) + " x " + str(h)],
         "window, um": [str(w * res) + " x " + str(h * res)],
         "um per px": [res]
     })], axis=1)
 
-    df = df[["frame", "t, s", "x, px", "y, px", "box shift x, px", "box shift y, px", "x, um", "y, um", "z std, um",
-             "total z, um", "v, um/s", "window, px", "window, um", "um per px"]]
+    df = df[["frame", "t, s", "x, px", "y, px", "box shift x, px", "box shift y, px", "x, um", "y, um",
+             "v, um/s", "window, px", "window, um", "um per px"]]
 
     writer = pd.ExcelWriter(
         os.path.join(target))
