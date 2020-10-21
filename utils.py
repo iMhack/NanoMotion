@@ -23,6 +23,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
     print("Started plotting results.")
     opened_plots = []
     shift_length_all = []
+    position_all = []
 
     for j in range(len(boxes_dict)):
         my_shift_x = shift_x[j]
@@ -124,8 +125,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.grid()
             plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt, markersize=markersize)  # , yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
             axe = plt.gca()
-            axe.set_xlim([-2, 2])
-            axe.set_ylim([-2, 2])
+            axe.set_xlim([-8, 8])
+            axe.set_ylim([-8, 8])
 
             plt.savefig(output_target + "_y(x).png")
             opened_plots.append(figure)
@@ -149,13 +150,16 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.ylabel("length, um")
 
             plt.grid()
-            plt.errorbar([frame / fps for frame in range(len(shift_length_step_um))], shift_length_step_um, ls=ls, fmt=fmt, markersize=markersize)
+            plt.errorbar([frame / fps for frame in range(len(shift_length_step_um))], shift_length_step_um, ls=None, fmt=fmt, markersize=markersize, alpha=0.5)
 
             plt.savefig(output_target + "_p.png")
             opened_plots.append(figure)
 
         if plots_dict["view_viollin_all_on_one"]:
             shift_length_all.append(shift_length_step_um)
+
+        if plots_dict["view_waves"]:
+            position_all.append([my_shift_x_um, my_shift_y_um])
 
     if plots_dict["view_viollin_all_on_one"]:
         print(np.shape(shift_length_all))
@@ -167,40 +171,65 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         sns.violinplot(data=shift_length_all, inner="quartiles")
         axe = plt.gca()
-        axe.set_ylim([-1, 1])
+        axe.set_ylim([-0.5, 2])
 
         plt.savefig("%s%s" % (output_basepath, "_violin_all_seaborn.png"))
         opened_plots.append(figure)
 
     if plots_dict["view_waves"]:  # TODO: use an "experimental" flag
-        print(np.shape(shift_length_all))
+        # print(np.shape(shift_length_all))
+        #
+        # figure = plt.figure(num=output_target + "Violins (matplotlib)")
+        # plt.title("Violins (matplotlib), #0 to #%d" % (j))
+        # plt.xlabel("Zone #")
+        # plt.ylabel("step length, um")
+        #
+        # parts = plt.violinplot(shift_length_all, showmeans=False, showextrema=False, showmedians=False)
+        # axe = plt.gca()
+        # axe.set_ylim([-1, 1])
+        #
+        # for pc in parts['bodies']:
+        #     pc.set_facecolor('#D43F3A')
+        #     pc.set_edgecolor('black')
+        #     pc.set_alpha(1)
+        #
+        # quartile1, medians, quartile3 = np.percentile(shift_length_all, [25, 50, 75], axis=1)
+        # whiskers = np.array([
+        #     adjacent_values(sorted_array, q1, q3)
+        #     for sorted_array, q1, q3 in zip(shift_length_all, quartile1, quartile3)])
+        # whiskers_min, whiskers_max = whiskers[:, 0], whiskers[:, 1]
+        #
+        # inds = np.arange(1, len(medians) + 1)
+        # axe.scatter(inds, medians, marker='o', color='white', s=30, zorder=3)
+        # axe.vlines(inds, quartile1, quartile3, color='k', linestyle='-', lw=5)
+        # axe.vlines(inds, whiskers_min, whiskers_max, color='k', linestyle='-', lw=1)
+        #
+        # plt.savefig("%s%s" % (output_basepath, "_violin_all_matplotlib.png"))
+        # opened_plots.append(figure)
+        figure = plt.figure(num=output_target + "y(x), um(um)")
+        plt.title("All cells, y(x), #0 to #%d" % (j))
+        plt.xlabel("x, um")
+        plt.ylabel("y, um")
 
-        figure = plt.figure(num=output_target + "Violins (matplotlib)")
-        plt.title("Violins (matplotlib), #0 to #%d" % (j))
-        plt.xlabel("Zone #")
-        plt.ylabel("step length, um")
+        plt.grid()
 
-        parts = plt.violinplot(shift_length_all, showmeans=False, showextrema=False, showmedians=False)
+        for b in range(0, len(position_all)):
+            x_raw = position_all[b][0]
+            y_raw = position_all[b][1]
+
+            # x -> y
+            # y -> -x
+            x = [-e for e in y_raw]
+            y = x_raw
+
+            plt.errorbar(x, y, ls="-", fmt=fmt, markersize=0, alpha=0.5, label=("Box #%d" % (b)))
+
         axe = plt.gca()
-        axe.set_ylim([-1, 1])
+        axe.legend()
+        axe.set_xlim([-2, 2])
+        axe.set_ylim([-2, 2])
 
-        for pc in parts['bodies']:
-            pc.set_facecolor('#D43F3A')
-            pc.set_edgecolor('black')
-            pc.set_alpha(1)
-
-        quartile1, medians, quartile3 = np.percentile(shift_length_all, [25, 50, 75], axis=1)
-        whiskers = np.array([
-            adjacent_values(sorted_array, q1, q3)
-            for sorted_array, q1, q3 in zip(shift_length_all, quartile1, quartile3)])
-        whiskers_min, whiskers_max = whiskers[:, 0], whiskers[:, 1]
-
-        inds = np.arange(1, len(medians) + 1)
-        axe.scatter(inds, medians, marker='o', color='white', s=30, zorder=3)
-        axe.vlines(inds, quartile1, quartile3, color='k', linestyle='-', lw=5)
-        axe.vlines(inds, whiskers_min, whiskers_max, color='k', linestyle='-', lw=1)
-
-        plt.savefig("%s%s" % (output_basepath, "_violin_all_matplotlib.png"))
+        plt.savefig(output_target + "_all_y(x).png")
         opened_plots.append(figure)
 
     plt.show()
