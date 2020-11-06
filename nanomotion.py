@@ -515,6 +515,7 @@ class Main(QMainWindow, Ui_MainWindow):
                                                    box_shift=self.solver.box_shift,
                                                    fps=self.solver.fps,
                                                    res=self.solver.res,
+                                                   input_path=self.fileName,
                                                    output_basepath=self.output_basepath,
                                                    plots_dict=self.plots_dict,
                                                    boxes_dict=self.boxes_dict,

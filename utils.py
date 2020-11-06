@@ -18,7 +18,7 @@ def adjacent_values(vals, q1, q3):
     return lower_adjacent_value, upper_adjacent_value
 
 
-def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res, output_basepath, plots_dict, boxes_dict, chop=False,
+def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res, input_path, output_basepath, plots_dict, boxes_dict, chop=False,
                  chop_duration=0, start_frame=0):
     print("Started plotting results.")
     opened_plots = []
@@ -207,7 +207,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         # plt.savefig("%s%s" % (output_basepath, "_violin_all_matplotlib.png"))
         # opened_plots.append(figure)
         figure = plt.figure(num=output_target + "y(x), um(um)")
-        plt.title("All cells, y(x), #0 to #%d" % (j))
+        plt.title("%s\n\nAll cells, y(x), #0 to #%d" % (input_path, j))
         plt.xlabel("x, um")
         plt.ylabel("y, um")
 
@@ -229,7 +229,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         axe.set_xlim([-2, 2])
         axe.set_ylim([-2, 2])
 
-        plt.savefig(output_target + "_all_y(x).png")
+        plt.savefig("%s%s" % (output_basepath, "_all_y(x).png"))
         opened_plots.append(figure)
 
     plt.show()
@@ -268,14 +268,18 @@ def export_results(shift_x, shift_y, box_shift, fps, res, w, h, v, output_basepa
     writer.save()
 
 
+def get_formatted_name(file):
+    if "." in file:
+        return os.path.basename(file)[:-4]
+    else:
+        return os.path.basename(file)
+
+
 def create_results_directory(file, cell_name):
     videofile_dir = os.path.dirname(os.path.abspath(file))
     results_dir = os.path.join(videofile_dir, "results")
 
-    if "." in file:
-        formatted_name = os.path.basename(file)[:-4]
-    else:
-        formatted_name = os.path.basename(file)
+    formatted_name = get_formatted_name(file)
 
     output_dir = os.path.join(results_dir, formatted_name)
 
