@@ -14,10 +14,9 @@ from PyQt5.QtCore import QThread, pyqtSignal
 class Solver(QThread):
     progressChanged = pyqtSignal(int, int, object)
 
-    def __init__(self, videodata, fps, res, box_dict, solver_number, start_frame, stop_frame, upsample_factor,
+    def __init__(self, videodata, fps, res, box_dict, start_frame, stop_frame, upsample_factor,
                  track, compare_first, filter, figure):
         QThread.__init__(self)
-        self.solver_number = solver_number  # store the ID of the solver
         self.videodata = videodata  # store an access to the video file to iterate over the frames
         self.figure = figure  # store the figure to draw displacement arrows
 
@@ -104,12 +103,22 @@ class Solver(QThread):
         if self.filter and len(self.debug_frames) == 0:
             image = skimage.filters.difference_of_gaussians(image, 1, 25)
 
+        # # Export code for debugging purposes
+        # frame_normed = 255 * (image - image.min()) / (image.max() - image.min())
+        # frame_normed = np.array(frame_normed, np.int)
+        #
+        # cv2.imwrite("debug/export.png", frame_normed)
+        # exit(0)
+
         return image
 
     def _phase_cross_correlation_wrapper(self, base, current, upsample_factor):
         current = self._filter_image_subset(current)
 
-        shift, error, phase = skimage.registration.phase_cross_correlation(base, current, upsample_factor=upsample_factor)
+        base_ft = np.fft.fft2(base)  # reusing the Fourier Transform later doesn't lead to noticeable performance improvements while preventing debugging
+        current_ft = np.fft.fft2(current)
+
+        shift, error, phase = skimage.registration.phase_cross_correlation(base_ft, current_ft, space="fourier", upsample_factor=upsample_factor)
 
         return current, shift, error, phase
 

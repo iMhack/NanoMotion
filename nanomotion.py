@@ -92,23 +92,23 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionStop_solver.setText('Stop analysis')
         self.actionStop_solver.triggered.connect(self.stopAnalysis)
 
-        self.actionClose_results = QtWidgets.QAction()
-        self.actionClose_results.setObjectName('actionClose_results')
-        self.menubar.addAction(self.actionClose_results)
-        self.actionClose_results.setText('Close plots')
-        self.actionClose_results.triggered.connect(self.closeResults)
+        self.actionReset_boxes = QtWidgets.QAction()
+        self.actionReset_boxes.setObjectName('actionReset_boxes')
+        self.menubar.addAction(self.actionReset_boxes)
+        self.actionReset_boxes.setText('Reset boxes')
+        self.actionReset_boxes.triggered.connect(self.reset_boxes)
 
         self.json_data = {}
 
-        self.loadParameters()
-
-        self.fileName = ""
+        self.fileName = None
         self.videodata = None
+
+        self.loadParameters()
 
         self.cursor = None
         self.plotSelection()  # set options to the booleans wanted even if the user didn't change anything
 
-        self.reset_needed = False
+        self.loadAndShowFile()
 
     def startFrame(self, update=True):
         if self.orignalVideoLen != float('inf'):
@@ -195,9 +195,10 @@ class Main(QMainWindow, Ui_MainWindow):
         self.mplvl.removeWidget(self.toolbar)
         self.toolbar.close()
 
-        self.reset_needed = False
-
     def loadAndShowFile(self):
+        if self.fileName is None:
+            return
+
         try:
             self.videodata = pims.ImageSequence(self.fileName)
         except Exception:
@@ -218,8 +219,6 @@ class Main(QMainWindow, Ui_MainWindow):
             self.unloadFile()
         except AttributeError:
             print("Nothing to clear.")
-
-        print(self.videodata)
 
         shape = np.shape(self.videodata.get_frame(0))
         try:
@@ -349,6 +348,9 @@ class Main(QMainWindow, Ui_MainWindow):
         with open('settings.json', 'r') as json_file:
             self.json_data = json.load(json_file)
 
+            if "last_file" in self.json_data:
+                self.fileName = self.json_data["last_file"]
+
             self.lineEdit_pix_size.setText(str(self.json_data["parameters"]["pixel_size"]))
             self.lineEdit_magn.setText(str(self.json_data["parameters"]["magnification"]))
             self.lineEdit_sub_pix.setText(str(self.json_data["parameters"]["sub_pixel"]))
@@ -393,6 +395,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.json_data["boxes"][self.fileName] = self.saved_boxes
 
         self.json_data = {
+            "last_file": self.fileName,
             "parameters": {
                 "pixel_size": float(self.lineEdit_pix_size.text()),
                 "magnification": int(self.lineEdit_magn.text()),
@@ -439,23 +442,12 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.solver is not None:  # remove the arrows
             self.solver.clear_annotations()
 
-        if self.reset_needed:
-            self.boxes.clear()
-
-            for box in self.boxes_dict:  # remove the boxes
-                box.disconnect()
-            self.boxes_dict.clear()
-
-            for box in self.saved_boxes.values():
-                self._addRectangle(box["number"], box["x0"], box["y0"], box["width"], box["height"])
-
-        self.reset_needed = True
-
         self.saveParameters()
         self.output_basepath = utils.create_results_directory(self.fileName, "")
         print("Tracking: %s." % (self.checkBox_track.isChecked()))
-        self.solver = Solver(videodata=self.videodata, fps=float(self.lineEdit_fps.text()),
-                             box_dict=self.boxes_dict, solver_number=0,
+        self.solver = Solver(videodata=self.videodata,
+                             fps=float(self.lineEdit_fps.text()),
+                             box_dict=self.boxes_dict,
                              upsample_factor=int(self.lineEdit_sub_pix.text()),
                              stop_frame=int(self.lineEdit_stop_frame.text()),
                              start_frame=int(self.lineEdit_start_frame.text()),
@@ -476,12 +468,14 @@ class Main(QMainWindow, Ui_MainWindow):
         print("Started timer.")
 
     def stopAnalysis(self):
+        print("Analysis stopped.")
+
         try:
-            print("Analysis stopped.")
             self.timer.stop()
+
             if self.solver is not None:
                 self.solver.stop()
-        except Exception:  # no timer launched, return gracefully
+        except Exception:  # no timer or solver launched, return gracefully
             pass
 
     def updateProgress(self):
@@ -505,35 +499,29 @@ class Main(QMainWindow, Ui_MainWindow):
                 self.figure.canvas.flush_events()
 
     def showResults(self):
-        self.saveParameters()
+        if self.solver is None or self.solver.progress < 100:
+            return
 
-        if self.solver is not None:
-            self.opened_plots = utils.plot_results(shift_x=self.solver.shift_x,
-                                                   shift_y=self.solver.shift_y,
-                                                   shift_p=self.solver.shift_p,
-                                                   shift_x_y_error=self.solver.shift_x_y_error,
-                                                   box_shift=self.solver.box_shift,
-                                                   fps=self.solver.fps,
-                                                   res=self.solver.res,
-                                                   input_path=self.fileName,
-                                                   output_basepath=self.output_basepath,
-                                                   plots_dict=self.plots_dict,
-                                                   boxes_dict=self.boxes_dict,
-                                                   chop_duration=float(self.lineEdit_chop_sec.text()),
-                                                   start_frame=self.solver.start_frame)
+        self.saveParameters()  # only save parameters if plots were successfully opened
+
+        self.opened_plots = utils.plot_results(shift_x=self.solver.shift_x,
+                                               shift_y=self.solver.shift_y,
+                                               shift_p=self.solver.shift_p,
+                                               shift_x_y_error=self.solver.shift_x_y_error,
+                                               box_shift=self.solver.box_shift,
+                                               fps=self.solver.fps,
+                                               res=self.solver.res,
+                                               input_path=self.fileName,
+                                               output_basepath=self.output_basepath,
+                                               plots_dict=self.plots_dict,
+                                               boxes_dict=self.boxes_dict,
+                                               chop_duration=float(self.lineEdit_chop_sec.text()),
+                                               start_frame=self.solver.start_frame)
 
         print("%d plots shown." % (len(self.opened_plots)))
 
-    def closeResults(self):
-        for figure in self.opened_plots:
-            try:
-                plt.close(figure)
-            except Exception:
-                pass
-
-        print("Closed plots.")
-
-        self.opened_plots = []
+    def reset_boxes(self):
+        self.loadAndShowFile()  # reloading the file resets everything
 
     def exportResults(self):
         if self.solver is not None:

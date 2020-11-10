@@ -234,7 +234,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
     plt.show()
 
-    return opened_plots  # TODO: fix return
+    return opened_plots
 
 
 def export_results(shift_x, shift_y, box_shift, fps, res, w, h, v, output_basepath):
