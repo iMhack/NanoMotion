@@ -5,6 +5,7 @@ import numpy as np
 
 import matplotlib
 import matplotlib.pyplot as plt
+import mplcursors
 import pandas as pd
 import seaborn as sns
 
@@ -171,7 +172,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         sns.violinplot(data=shift_length_all, inner="quartiles")
         axe = plt.gca()
-        axe.set_ylim([-0.5, 2])
+        axe.set_ylim([-0.5, 1])
 
         plt.savefig("%s%s" % (output_basepath, "_violin_all_seaborn.png"))
         opened_plots.append(figure)
@@ -213,6 +214,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         plt.grid()
 
+        bars = []
         for b in range(0, len(position_all)):
             x_raw = position_all[b][0]
             y_raw = position_all[b][1]
@@ -222,12 +224,15 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             x = [-e for e in y_raw]
             y = x_raw
 
-            plt.errorbar(x, y, ls="-", fmt=fmt, markersize=0, alpha=0.5, label=("Box #%d" % (b)))
+            bar = plt.errorbar(x, y, ls="-", fmt=fmt, markersize=0, alpha=0.5, label=("Box #%d" % (b)))
+            bars.append(bar)
 
         axe = plt.gca()
         axe.legend()
         axe.set_xlim([-2, 2])
         axe.set_ylim([-2, 2])
+
+        mplcursors.cursor(bars, highlight=True)
 
         plt.savefig("%s%s" % (output_basepath, "_all_y(x).png"))
         opened_plots.append(figure)
@@ -237,7 +242,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
     return opened_plots
 
 
-def export_results(shift_x, shift_y, box_shift, fps, res, w, h, v, output_basepath):
+def export_results(shift_x, shift_y, box_shift, fps, res, w, h, output_basepath):
     target = "%s_output.xlsx" % (output_basepath)
     print("Exporting results to %s." % (target))
 
@@ -253,14 +258,12 @@ def export_results(shift_x, shift_y, box_shift, fps, res, w, h, v, output_basepa
     })
 
     df = pd.concat([df, pd.DataFrame({
-        "v, um/s": [v],
         "window, px": [str(w) + " x " + str(h)],
         "window, um": [str(w * res) + " x " + str(h * res)],
         "um per px": [res]
     })], axis=1)
 
-    df = df[["frame", "t, s", "x, px", "y, px", "box shift x, px", "box shift y, px", "x, um", "y, um",
-             "v, um/s", "window, px", "window, um", "um per px"]]
+    df = df[["frame", "t, s", "x, px", "y, px", "box shift x, px", "box shift y, px", "x, um", "y, um", "window, px", "window, um", "um per px"]]
 
     writer = pd.ExcelWriter(
         os.path.join(target))

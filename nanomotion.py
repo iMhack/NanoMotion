@@ -533,7 +533,6 @@ class Main(QMainWindow, Ui_MainWindow):
                                      res=self.solver.res,
                                      w=self.solver.box_dict[j].rect._width,
                                      h=self.solver.box_dict[j].rect._height,
-                                     v=self.solver.v_rms[j],
                                      output_basepath=self.output_basepath + str(j))
 
         print("Files exported.")
