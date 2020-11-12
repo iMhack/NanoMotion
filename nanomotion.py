@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import os.path
@@ -21,8 +22,6 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication, QFileDialog
 from PyQt5.uic import loadUiType
 from solver import Solver
-
-print("Beginning of the code.")
 
 # To keep the tips when editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
@@ -109,6 +108,9 @@ class Main(QMainWindow, Ui_MainWindow):
         self.plotSelection()  # set options to the booleans wanted even if the user didn't change anything
 
         self.loadAndShowFile()
+
+        if args.autostart:
+            self.startAnalysis()
 
     def startFrame(self, update=True):
         if self.orignalVideoLen != float('inf'):
@@ -498,6 +500,9 @@ class Main(QMainWindow, Ui_MainWindow):
                 self.figure.canvas.draw()
                 self.figure.canvas.flush_events()
 
+                if self.solver.progress == 100 and args.show_results:
+                    self.showResults()
+
     def showResults(self):
         if self.solver is None or self.solver.progress < 100:
             return
@@ -539,9 +544,18 @@ class Main(QMainWindow, Ui_MainWindow):
 
 
 if __name__ == '__main__':
-    print("Python interpreter: %s." % (os.path.dirname(sys.executable)))
+    print("Python interpreter: %s, version: %s." % (os.path.dirname(sys.executable), sys.version))
     sys.stdout.flush()
+
+    parser = argparse.ArgumentParser(description="Nanomotion software.")
+    parser.add_argument("-a", "--autostart", help="Immediately start the analysis.", action="store_true")
+    parser.add_argument("-r", "--show_results", help="Immediately show results after analysis.", action="store_true")
+
+    args = parser.parse_args()
+
     app = QApplication(sys.argv)
+
     menu = Main()
     menu.show()
+
     sys.exit(app.exec_())
