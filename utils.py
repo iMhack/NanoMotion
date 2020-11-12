@@ -58,7 +58,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         markersize = 4
         if plots_dict["view_position_x"]:
             figure = plt.figure(num=output_target + "x(t), um(s)")
-            plt.title("x(t), #%d" % (j))
+            plt.title("%s\n\nx(t), #%d" % (input_path, j))
             plt.xlabel("t, s")
             plt.ylabel("x, um")
 
@@ -71,7 +71,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         if plots_dict["view_position_y"]:
             figure = plt.figure(num=output_target + "y(t), um(s)")
-            plt.title("y(t), #%d" % (j))
+            plt.title("%s\n\ny(t), #%d" % (input_path, j))
             plt.xlabel("t, s")
             plt.ylabel("y, um")
 
@@ -84,7 +84,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         if plots_dict["view_violin"]:
             figure = plt.figure(num=output_target + "violin of step length")
-            plt.title("Violin, #%d" % (j))
+            plt.title("%s\n\nViolin, #%d" % (input_path, j))
             plt.ylabel("step length, um")
 
             sns.violinplot(data=shift_length_step_um, inner="stick")
@@ -100,7 +100,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
                 print("WARNING: chop duration would exceed total number of frames.")
             else:
                 figure = plt.figure(num=output_target + "violin chopped of step length")
-                plt.title("Violin #%d chopped every %d sec" % (j, chop_duration))
+                plt.title("%s\n\nViolin #%d chopped every %d sec" % (input_path, j, chop_duration))
                 plt.xlabel("frame range")
                 plt.ylabel("step length, um")
 
@@ -114,12 +114,16 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
                 g = sns.violinplot(data=chopped_data, inner="stick")
                 g.set_xticklabels(labels, rotation=30)
 
+                axe = plt.gca()
+                axe.legend()
+                axe.set_ylim([-0.5, 1])
+
                 plt.savefig(output_target + "_violin_chopped.png")
                 opened_plots.append(figure)
 
         if plots_dict["view_position"]:
             figure = plt.figure(num=output_target + "y(x), um(um)")
-            plt.title("y(x), #%d" % (j))
+            plt.title("%s\n\ny(x), #%d" % (input_path, j))
             plt.xlabel("x, um")
             plt.ylabel("y, um")
 
@@ -134,7 +138,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         if plots_dict["view_phase"]:
             figure = plt.figure(num=output_target + "phase")
-            plt.title("Phase, #%d" % (j))
+            plt.title("%s\n\nPhase, #%d" % (input_path, j))
             plt.xlabel("Frame #")
             plt.ylabel("Phase")
 
@@ -146,7 +150,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         if plots_dict["view_step_length"]:
             figure = plt.figure(num=output_target + "steps")
-            plt.title("Steps, #%d" % (j))
+            plt.title("%s\n\nSteps, #%d" % (input_path, j))
             plt.xlabel("t, s")
             plt.ylabel("length, um")
 
@@ -166,7 +170,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         print(np.shape(shift_length_all))
 
         figure = plt.figure(num=output_target + "Violins (seaborn)")
-        plt.title("Violins (seaborn), #0 to #%d" % (j))
+        plt.title("%s\n\nViolins (seaborn), #0 to #%d" % (input_path, j))
         plt.xlabel("Zone #")
         plt.ylabel("step length, um")
 
