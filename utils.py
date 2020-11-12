@@ -66,6 +66,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.errorbar([frame / fps for frame in range(len(my_shift_x))], my_shift_x_um, ls=ls, fmt=fmt, markersize=markersize,
                          yerr=my_shift_x_um_error)
 
+            plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
+
             plt.savefig(output_target + "_x(t).png")
             opened_plots.append(figure)
 
@@ -79,6 +81,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.errorbar([frame / fps for frame in range(len(my_shift_y))], my_shift_y_um, ls=ls, fmt=fmt, markersize=markersize,
                          yerr=my_shift_y_um_error)
 
+            plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
+
             plt.savefig(output_target + "_y(t).png")
             opened_plots.append(figure)
 
@@ -88,6 +92,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.ylabel("step length, um")
 
             sns.violinplot(data=shift_length_step_um, inner="stick")
+
+            plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
             plt.savefig(output_target + "_violin.png")
             opened_plots.append(figure)
@@ -116,7 +122,9 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
                 axe = plt.gca()
                 axe.legend()
-                axe.set_ylim([-0.5, 1])
+                axe.set_ylim([-0.1, 0.5])
+
+                plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
                 plt.savefig(output_target + "_violin_chopped.png")
                 opened_plots.append(figure)
@@ -129,9 +137,12 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
             plt.grid()
             plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt, markersize=markersize)  # , yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
+
             axe = plt.gca()
             axe.set_xlim([-8, 8])
             axe.set_ylim([-8, 8])
+
+            plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
             plt.savefig(output_target + "_y(x).png")
             opened_plots.append(figure)
@@ -145,6 +156,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.grid()
             plt.plot(my_shift_p)
 
+            plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
+
             plt.savefig(output_target + "_p.png")
             opened_plots.append(figure)
 
@@ -157,6 +170,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.grid()
             plt.errorbar([frame / fps for frame in range(len(shift_length_step_um))], shift_length_step_um, ls=None, fmt=fmt, markersize=markersize, alpha=0.5)
 
+            plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
+
             plt.savefig(output_target + "_p.png")
             opened_plots.append(figure)
 
@@ -167,7 +182,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             position_all.append([my_shift_x_um, my_shift_y_um])
 
     if plots_dict["view_viollin_all_on_one"]:
-        print(np.shape(shift_length_all))
+        print("Plotting all (%d) violins containing each %d data points." % np.shape(shift_length_all))
 
         figure = plt.figure(num=output_target + "Violins (seaborn)")
         plt.title("%s\n\nViolins (seaborn), #0 to #%d" % (input_path, j))
@@ -175,8 +190,11 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         plt.ylabel("step length, um")
 
         sns.violinplot(data=shift_length_all, inner="quartiles")
+
         axe = plt.gca()
-        axe.set_ylim([-0.5, 1])
+        axe.set_ylim([-0.1, 0.5])
+
+        plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
         plt.savefig("%s%s" % (output_basepath, "_violin_all_seaborn.png"))
         opened_plots.append(figure)
@@ -237,6 +255,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         axe.set_ylim([-2, 2])
 
         mplcursors.cursor(bars, highlight=True)
+
+        plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
         plt.savefig("%s%s" % (output_basepath, "_all_y(x).png"))
         opened_plots.append(figure)
