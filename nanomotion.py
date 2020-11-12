@@ -39,7 +39,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.output_basepath = []
         self.solver = None
         self.basename = None
-        self.orignalVideoLen = 0
+        self.originalVideoLength = 0
         self.timer = 0
 
         self.actionOpen.triggered.connect(self.browseFiles)
@@ -113,9 +113,9 @@ class Main(QMainWindow, Ui_MainWindow):
             self.startAnalysis()
 
     def startFrame(self, update=True):
-        if self.orignalVideoLen != float('inf'):
-            if int(self.lineEdit_start_frame.text()) >= self.orignalVideoLen:
-                self.lineEdit_start_frame.setText(str(self.orignalVideoLen - 1))
+        if self.originalVideoLength != float('inf'):
+            if int(self.lineEdit_start_frame.text()) >= self.originalVideoLength:
+                self.lineEdit_start_frame.setText(str(self.originalVideoLength - 1))
             if self.fileName != "":
                 try:
                     if update:
@@ -130,9 +130,9 @@ class Main(QMainWindow, Ui_MainWindow):
             return 0
 
     def stopFrame(self):
-        if self.orignalVideoLen != float('inf'):
-            if int(self.lineEdit_stop_frame.text()) >= self.orignalVideoLen:
-                self.lineEdit_stop_frame.setText(str(self.orignalVideoLen - 1))
+        if self.originalVideoLength != float('inf'):
+            if int(self.lineEdit_stop_frame.text()) >= self.originalVideoLength:
+                self.lineEdit_stop_frame.setText(str(self.originalVideoLength - 1))
             if self.fileName != "":
                 try:
                     return self.videodata.get_frame(int(self.lineEdit_stop_frame.text()))
@@ -224,11 +224,11 @@ class Main(QMainWindow, Ui_MainWindow):
 
         shape = np.shape(self.videodata.get_frame(0))
         try:
-            self.orignalVideoLen = len(self.videodata)  # try to get the video length (can vary depending on the Python environment)
+            self.originalVideoLength = len(self.videodata)  # try to get the video length (can vary depending on the Python environment)
         except Exception:
             print("Can't get video length.")
 
-        print("Shape of videodata[0]: %s x %d frames. Object type: %s." % (shape, self.orignalVideoLen, type(self.videodata)))
+        print("Shape of videodata[0]: %s x %d frames. Object type: %s." % (shape, self.originalVideoLength, type(self.videodata)))
 
         self.figure = Figure()
         sub = self.figure.add_subplot(111)

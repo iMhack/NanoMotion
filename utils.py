@@ -44,7 +44,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         my_shift_x_um_error = [e * x for e, x in zip(my_shift_x_y_error, my_shift_x_um)]
         my_shift_y_um_error = [e * y for e, y in zip(my_shift_x_y_error, my_shift_y_um)]
 
-        output_target = "%s%d" % (output_basepath, j)
+        output_cell_target = "%s_cell_%d" % (output_basepath, j)
 
         shift_x_step_um = [my_shift_x_um[i + 1] - my_shift_x_um[i] for i in range(len(my_shift_x_um) - 1)]
         shift_y_step_um = [my_shift_y_um[i + 1] - my_shift_y_um[i] for i in range(len(my_shift_y_um) - 1)]
@@ -57,7 +57,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         fmt = "o"
         markersize = 4
         if plots_dict["view_position_x"]:
-            figure = plt.figure(num=output_target + "x(t), um(s)")
+            figure = plt.figure(num=output_cell_target + "x(t), um(s)")
             plt.title("%s\n\nx(t), #%d" % (input_path, j))
             plt.xlabel("t, s")
             plt.ylabel("x, um")
@@ -68,11 +68,11 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
             plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
-            plt.savefig(output_target + "_x(t).png")
+            plt.savefig(output_cell_target + "_x(t).png")
             opened_plots.append(figure)
 
         if plots_dict["view_position_y"]:
-            figure = plt.figure(num=output_target + "y(t), um(s)")
+            figure = plt.figure(num=output_cell_target + "y(t), um(s)")
             plt.title("%s\n\ny(t), #%d" % (input_path, j))
             plt.xlabel("t, s")
             plt.ylabel("y, um")
@@ -83,11 +83,11 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
             plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
-            plt.savefig(output_target + "_y(t).png")
+            plt.savefig(output_cell_target + "_y(t).png")
             opened_plots.append(figure)
 
         if plots_dict["view_violin"]:
-            figure = plt.figure(num=output_target + "violin of step length")
+            figure = plt.figure(num=output_cell_target + "violin of step length")
             plt.title("%s\n\nViolin, #%d" % (input_path, j))
             plt.ylabel("step length, um")
 
@@ -95,7 +95,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
             plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
-            plt.savefig(output_target + "_violin.png")
+            plt.savefig(output_cell_target + "_violin.png")
             opened_plots.append(figure)
 
         if plots_dict["view_violin_chop"]:
@@ -105,7 +105,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             if number_of_full_chops < 1:
                 print("WARNING: chop duration would exceed total number of frames.")
             else:
-                figure = plt.figure(num=output_target + "violin chopped of step length")
+                figure = plt.figure(num=output_cell_target + "violin chopped of step length")
                 plt.title("%s\n\nViolin #%d chopped every %d sec" % (input_path, j, chop_duration))
                 plt.xlabel("frame range")
                 plt.ylabel("step length, um")
@@ -126,11 +126,11 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
                 plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
-                plt.savefig(output_target + "_violin_chopped.png")
+                plt.savefig(output_cell_target + "_violin_chopped.png")
                 opened_plots.append(figure)
 
         if plots_dict["view_position"]:
-            figure = plt.figure(num=output_target + "y(x), um(um)")
+            figure = plt.figure(num=output_cell_target + "y(x), um(um)")
             plt.title("%s\n\ny(x), #%d" % (input_path, j))
             plt.xlabel("x, um")
             plt.ylabel("y, um")
@@ -144,11 +144,11 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
             plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
-            plt.savefig(output_target + "_y(x).png")
+            plt.savefig(output_cell_target + "_y(x).png")
             opened_plots.append(figure)
 
         if plots_dict["view_phase"]:
-            figure = plt.figure(num=output_target + "phase")
+            figure = plt.figure(num=output_cell_target + "phase")
             plt.title("%s\n\nPhase, #%d" % (input_path, j))
             plt.xlabel("Frame #")
             plt.ylabel("Phase")
@@ -158,11 +158,11 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
             plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
-            plt.savefig(output_target + "_p.png")
+            plt.savefig(output_cell_target + "_p.png")
             opened_plots.append(figure)
 
         if plots_dict["view_step_length"]:
-            figure = plt.figure(num=output_target + "steps")
+            figure = plt.figure(num=output_cell_target + "steps")
             plt.title("%s\n\nSteps, #%d" % (input_path, j))
             plt.xlabel("t, s")
             plt.ylabel("length, um")
@@ -172,7 +172,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
             plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
-            plt.savefig(output_target + "_p.png")
+            plt.savefig(output_cell_target + "_p.png")
             opened_plots.append(figure)
 
         if plots_dict["view_viollin_all_on_one"]:
@@ -184,7 +184,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
     if plots_dict["view_viollin_all_on_one"]:
         print("Plotting all (%d) violins containing each %d data points." % np.shape(shift_length_all))
 
-        figure = plt.figure(num=output_target + "Violins (seaborn)")
+        figure = plt.figure(num=output_cell_target + "Violins (seaborn)")
         plt.title("%s\n\nViolins (seaborn), #0 to #%d" % (input_path, j))
         plt.xlabel("Zone #")
         plt.ylabel("step length, um")
@@ -202,7 +202,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
     if plots_dict["view_waves"]:  # TODO: use an "experimental" flag
         # print(np.shape(shift_length_all))
         #
-        # figure = plt.figure(num=output_target + "Violins (matplotlib)")
+        # figure = plt.figure(num=output_cell_target + "Violins (matplotlib)")
         # plt.title("Violins (matplotlib), #0 to #%d" % (j))
         # plt.xlabel("Zone #")
         # plt.ylabel("step length, um")
@@ -229,7 +229,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         #
         # plt.savefig("%s%s" % (output_basepath, "_violin_all_matplotlib.png"))
         # opened_plots.append(figure)
-        figure = plt.figure(num=output_target + "y(x), um(um)")
+        figure = plt.figure(num=output_basepath + "_all_y(x).png")
         plt.title("%s\n\nAll cells, y(x), #0 to #%d" % (input_path, j))
         plt.xlabel("x, um")
         plt.ylabel("y, um")
@@ -313,4 +313,4 @@ def create_results_directory(file, cell_name):
     os.makedirs(results_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
 
-    return os.path.join(output_dir, formatted_name + "_cell_")
+    return os.path.join(output_dir, formatted_name)

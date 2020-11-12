@@ -7,7 +7,8 @@ import skimage.color
 import skimage.filters
 import skimage.registration
 
-import matplotlib.patches as patches
+import matplotlib
+import matplotlib.patches
 from PyQt5.QtCore import QThread, pyqtSignal
 
 
@@ -15,7 +16,7 @@ class Solver(QThread):
     progressChanged = pyqtSignal(int, int, object)
 
     def __init__(self, videodata, fps, res, box_dict, start_frame, stop_frame, upsample_factor,
-                 track, compare_first, filter, figure):
+                 track, compare_first, filter, figure, write_target=None):
         QThread.__init__(self)
         self.videodata = videodata  # store an access to the video file to iterate over the frames
         self.figure = figure  # store the figure to draw displacement arrows
@@ -48,9 +49,12 @@ class Solver(QThread):
         self.box_shift = [[[0, 0] for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.cumulated_shift = [[0, 0] for _ in self.box_dict]
 
-        self.frame_n = self.videodata.get_frame(start_frame)
+        self.frame_n = None
         self.progress = 0
         self.current_i = -1
+
+        # TODO: change write target
+        self.write_target = "./debug/out/"
 
         self.debug_frames = []
 
@@ -87,7 +91,7 @@ class Solver(QThread):
         if current is not None:
             current.remove()
 
-        arrow = patches.FancyArrow(self.centers_dict[j][0], self.centers_dict[j][1], dx, dy, width=2, head_length=1, head_width=4)
+        arrow = matplotlib.patches.FancyArrow(self.centers_dict[j][0], self.centers_dict[j][1], dx, dy, width=2, head_length=1, head_width=4)
 
         self.arrows_dict[j] = ax.add_patch(arrow)
 
@@ -101,19 +105,16 @@ class Solver(QThread):
 
     def _filter_image_subset(self, image):
         if self.filter and len(self.debug_frames) == 0:
-            image = skimage.filters.difference_of_gaussians(image, 1, 25)
+            image = skimage.filters.difference_of_gaussians(image, 0.5, 25)
 
         # # Export code for debugging purposes
-        # frame_normed = 255 * (image - image.min()) / (image.max() - image.min())
-        # frame_normed = np.array(frame_normed, np.int)
-        #
-        # cv2.imwrite("debug/export.png", frame_normed)
+        # cv2.imwrite("debug/export.png", image * 255)
         # exit(0)
 
         return image
 
     def _phase_cross_correlation_wrapper(self, base, current, upsample_factor):
-        current = self._filter_image_subset(current)
+        current = self._filter_image_subset(current)  # only filter 'current' image as 'base' was already filtered in the previous pass
 
         base_ft = np.fft.fft2(base)  # reusing the Fourier Transform later doesn't lead to noticeable performance improvements while preventing debugging
         current_ft = np.fft.fft2(current)
@@ -130,6 +131,17 @@ class Solver(QThread):
                 futures.append(future)
 
         return [future.result() for future in futures]
+
+    def _combine_subset(self, colored_frame_n, j, image_n):
+        # TODO: correct colormap range
+        # colored_subset = matplotlib.cm.magma(image_n)
+
+        mappable = matplotlib.cm.ScalarMappable(matplotlib.colors.Normalize(), matplotlib.cm.magma)
+        colored_subset = mappable.to_rgba(image_n)
+
+        colored_frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]] = colored_subset
+
+        return colored_frame_n
 
     def _compute_phase_corr(self):  # compute the cross correlation for all frames for the selected polygon crop
         print("self.go_on is set to %s." % (self.go_on))
@@ -170,6 +182,9 @@ class Solver(QThread):
                     if i < self.stop_frame:  # pooling the next image helps when analyzing a low number of cells
                         with concurrent.futures.ThreadPoolExecutor() as executor:
                             next_frame = executor.submit(self.videodata.get_frame, i + 1)
+
+                if self.write_target is not None:
+                    colored_frame_n = skimage.color.gray2rgba(self.frame_n)  # rgb (, 3) with alpha channel (, 4) because matplotlib.cm returns one (, 4)
 
                 parameters = [None for _ in range(len(self.box_dict))]
                 for j in range(len(self.box_dict)):  # j iterates over all boxes
@@ -255,6 +270,9 @@ class Solver(QThread):
                     #     print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f."
                     #           % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
 
+                    if self.write_target is not None:
+                        colored_frame_n = self._combine_subset(colored_frame_n, j, image_n)
+
                     if not self.compare_first:  # store the current image to be compared later
                         images[j] = image_n
 
@@ -277,6 +295,9 @@ class Solver(QThread):
 
                         # Current image (i): parameters[j][0]
                         cv2.imwrite(("./debug/box_%d-%d.png" % (j, i)), image_n)
+
+                if self.write_target is not None:
+                    cv2.imwrite("%s%d.png" % (self.write_target, i), colored_frame_n * 255)
 
                 self.progress = int(((i - self.start_frame) / length) * 100)
                 if self.progress > progress_pivot + 4:
