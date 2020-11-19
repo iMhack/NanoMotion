@@ -1,5 +1,5 @@
 {
-    "last_file": "D:/Capture/Toxins/2020-11-06/180m-images_6.mp4",
+    "last_file": "D:/Capture/Toxins/2020-11-06/60m-images_5-cut_2.mp4",
     "parameters": {
         "pixel_size": 1.67,
         "magnification": 0,
@@ -22,12 +22,12 @@
         "position": false,
         "position_x": false,
         "position_y": false,
+        "position_all_on_one": true,
         "phase": false,
         "violin": false,
         "violin_chop": false,
         "violin_all_on_one": true,
-        "step_length": false,
-        "waves": true
+        "step_length": false
     },
     "boxes": {
         "D:/Capture/10-07-2020": {

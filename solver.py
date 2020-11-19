@@ -54,7 +54,8 @@ class Solver(QThread):
         self.current_i = -1
 
         # TODO: change write target
-        self.write_target = "./debug/out/"
+        self.write_target = write_target
+        # self.write_target = "./debug/out/"
 
         self.debug_frames = []
 
@@ -106,6 +107,7 @@ class Solver(QThread):
     def _filter_image_subset(self, image):
         if self.filter and len(self.debug_frames) == 0:
             image = skimage.filters.difference_of_gaussians(image, 0.5, 25)
+            image = image * skimage.filters.window('hann', image.shape)
 
         # # Export code for debugging purposes
         # cv2.imwrite("debug/export.png", image * 255)
@@ -297,7 +299,7 @@ class Solver(QThread):
                         cv2.imwrite(("./debug/box_%d-%d.png" % (j, i)), image_n)
 
                 if self.write_target is not None:
-                    cv2.imwrite("%s%d.png" % (self.write_target, i), colored_frame_n * 255)
+                    cv2.imwrite("%simage%d.png" % (self.write_target, i), colored_frame_n * 255)
 
                 self.progress = int(((i - self.start_frame) / length) * 100)
                 if self.progress > progress_pivot + 4:

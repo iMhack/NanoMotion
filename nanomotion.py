@@ -50,12 +50,12 @@ class Main(QMainWindow, Ui_MainWindow):
         self.view_position_x.triggered.connect(self.plotSelection)
         self.view_position_y.triggered.connect(self.plotSelection)
         self.view_position.triggered.connect(self.plotSelection)
+        self.view_position_all_on_one.triggered.connect(self.plotSelection)
         self.view_phase.triggered.connect(self.plotSelection)
         self.view_violin.triggered.connect(self.plotSelection)
-        self.view_viollin_all_on_one.triggered.connect(self.plotSelection)
+        self.view_violin_all_on_one.triggered.connect(self.plotSelection)
         self.view_violin_chop.triggered.connect(self.plotSelection)
         self.view_step_length.triggered.connect(self.plotSelection)
-        self.view_waves.triggered.connect(self.plotSelection)
 
         self.actionAdd_box = QtWidgets.QAction()
         self.actionAdd_box.setObjectName('actionAdd_box')
@@ -379,12 +379,12 @@ class Main(QMainWindow, Ui_MainWindow):
             self.view_position.setChecked(self.json_data["actions"]["position"])
             self.view_position_x.setChecked(self.json_data["actions"]["position_x"])
             self.view_position_y.setChecked(self.json_data["actions"]["position_y"])
+            self.view_position_all_on_one.setChecked(self.json_data["actions"]["position_all_on_one"])
             self.view_phase.setChecked(self.json_data["actions"]["phase"])
             self.view_violin.setChecked(self.json_data["actions"]["violin"])
             self.view_violin_chop.setChecked(self.json_data["actions"]["violin_chop"])
-            self.view_viollin_all_on_one.setChecked(self.json_data["actions"]["violin_all_on_one"])
+            self.view_violin_all_on_one.setChecked(self.json_data["actions"]["violin_all_on_one"])
             self.view_step_length.setChecked(self.json_data["actions"]["step_length"])
-            self.view_waves.setChecked(self.json_data["actions"]["waves"])
 
             print("Parameters loaded.")
 
@@ -420,12 +420,12 @@ class Main(QMainWindow, Ui_MainWindow):
                 "position": self.view_position.isChecked(),
                 "position_x": self.view_position_x.isChecked(),
                 "position_y": self.view_position_y.isChecked(),
+                "position_all_on_one": self.view_position_all_on_one.isChecked(),
                 "phase": self.view_phase.isChecked(),
                 "violin": self.view_violin.isChecked(),
                 "violin_chop": self.view_violin_chop.isChecked(),
-                "violin_all_on_one": self.view_viollin_all_on_one.isChecked(),
-                "step_length": self.view_step_length.isChecked(),
-                "waves": self.view_waves.isChecked()
+                "violin_all_on_one": self.view_violin_all_on_one.isChecked(),
+                "step_length": self.view_step_length.isChecked()
             },
             "boxes": self.json_data["boxes"]
         }

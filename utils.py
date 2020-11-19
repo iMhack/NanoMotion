@@ -175,60 +175,13 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             plt.savefig(output_cell_target + "_p.png")
             opened_plots.append(figure)
 
-        if plots_dict["view_viollin_all_on_one"]:
-            shift_length_all.append(shift_length_step_um)
-
-        if plots_dict["view_waves"]:
+        if plots_dict["view_position_all_on_one"]:
             position_all.append([my_shift_x_um, my_shift_y_um])
 
-    if plots_dict["view_viollin_all_on_one"]:
-        print("Plotting all (%d) violins containing each %d data points." % np.shape(shift_length_all))
+        if plots_dict["view_violin_all_on_one"]:
+            shift_length_all.append(shift_length_step_um)
 
-        figure = plt.figure(num=output_cell_target + "Violins (seaborn)")
-        plt.title("%s\n\nViolins (seaborn), #0 to #%d" % (input_path, j))
-        plt.xlabel("Zone #")
-        plt.ylabel("step length, um")
-
-        sns.violinplot(data=shift_length_all, inner="quartiles")
-
-        axe = plt.gca()
-        axe.set_ylim([-0.1, 0.5])
-
-        plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
-
-        plt.savefig("%s%s" % (output_basepath, "_violin_all_seaborn.png"))
-        opened_plots.append(figure)
-
-    if plots_dict["view_waves"]:  # TODO: use an "experimental" flag
-        # print(np.shape(shift_length_all))
-        #
-        # figure = plt.figure(num=output_cell_target + "Violins (matplotlib)")
-        # plt.title("Violins (matplotlib), #0 to #%d" % (j))
-        # plt.xlabel("Zone #")
-        # plt.ylabel("step length, um")
-        #
-        # parts = plt.violinplot(shift_length_all, showmeans=False, showextrema=False, showmedians=False)
-        # axe = plt.gca()
-        # axe.set_ylim([-1, 1])
-        #
-        # for pc in parts['bodies']:
-        #     pc.set_facecolor('#D43F3A')
-        #     pc.set_edgecolor('black')
-        #     pc.set_alpha(1)
-        #
-        # quartile1, medians, quartile3 = np.percentile(shift_length_all, [25, 50, 75], axis=1)
-        # whiskers = np.array([
-        #     adjacent_values(sorted_array, q1, q3)
-        #     for sorted_array, q1, q3 in zip(shift_length_all, quartile1, quartile3)])
-        # whiskers_min, whiskers_max = whiskers[:, 0], whiskers[:, 1]
-        #
-        # inds = np.arange(1, len(medians) + 1)
-        # axe.scatter(inds, medians, marker='o', color='white', s=30, zorder=3)
-        # axe.vlines(inds, quartile1, quartile3, color='k', linestyle='-', lw=5)
-        # axe.vlines(inds, whiskers_min, whiskers_max, color='k', linestyle='-', lw=1)
-        #
-        # plt.savefig("%s%s" % (output_basepath, "_violin_all_matplotlib.png"))
-        # opened_plots.append(figure)
+    if plots_dict["view_position_all_on_one"]:
         figure = plt.figure(num=output_basepath + "_all_y(x).png")
         plt.title("%s\n\nAll cells, y(x), #0 to #%d" % (input_path, j))
         plt.xlabel("x, um")
@@ -259,6 +212,24 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
         plt.savefig("%s%s" % (output_basepath, "_all_y(x).png"))
+        opened_plots.append(figure)
+
+    if plots_dict["view_violin_all_on_one"]:
+        print("Plotting all (%d) violins containing each %d data points." % np.shape(shift_length_all))
+
+        figure = plt.figure(num=output_cell_target + "Violins (seaborn)")
+        plt.title("%s\n\nViolins (seaborn), #0 to #%d" % (input_path, j))
+        plt.xlabel("Zone #")
+        plt.ylabel("step length, um")
+
+        sns.violinplot(data=shift_length_all, inner="quartiles")
+
+        axe = plt.gca()
+        axe.set_ylim([-0.1, 0.5])
+
+        plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
+
+        plt.savefig("%s%s" % (output_basepath, "_violin_all_seaborn.png"))
         opened_plots.append(figure)
 
     plt.show()

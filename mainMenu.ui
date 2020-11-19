@@ -591,10 +591,10 @@
      <addaction name="view_position_y"/>
      <addaction name="view_violin"/>
      <addaction name="view_violin_chop"/>
-     <addaction name="view_viollin_all_on_one"/>
+     <addaction name="view_violin_all_on_one"/>
      <addaction name="view_phase"/>
      <addaction name="view_step_length"/>
-     <addaction name="view_waves"/>
+     <addaction name="view_position_all_on_one"/>
     </widget>
     <addaction name="actionSubstract"/>
     <addaction name="menuView_plot"/>
@@ -728,7 +728,7 @@
     <string>Export results</string>
    </property>
   </action>
-  <action name="view_viollin_all_on_one">
+  <action name="view_violin_all_on_one">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -736,7 +736,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>All violins on one graph</string>
+    <string>All violins on one figure</string>
    </property>
   </action>
   <action name="view_violin_chop">
@@ -763,12 +763,12 @@
     <string>Step length</string>
    </property>
   </action>
-  <action name="view_waves">
+  <action name="view_position_all_on_one">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Waves</string>
+    <string>All positions on one figure</string>
    </property>
   </action>
  </widget>
