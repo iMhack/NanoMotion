@@ -377,6 +377,7 @@ class Main(QMainWindow, Ui_MainWindow):
             self.view_violin_chop.setChecked(self.json_data["actions"]["violin_chop"])
             self.view_violin_all_on_one.setChecked(self.json_data["actions"]["violin_all_on_one"])
             self.view_step_length.setChecked(self.json_data["actions"]["step_length"])
+            self.view_experimental.setChecked(self.json_data["actions"]["experimental"])
 
             print("Parameters loaded.")
 
@@ -417,7 +418,8 @@ class Main(QMainWindow, Ui_MainWindow):
                 "violin": self.view_violin.isChecked(),
                 "violin_chop": self.view_violin_chop.isChecked(),
                 "violin_all_on_one": self.view_violin_all_on_one.isChecked(),
-                "step_length": self.view_step_length.isChecked()
+                "step_length": self.view_step_length.isChecked(),
+                "experimental": self.view_experimental.isChecked()
             },
             "boxes": self.json_data["boxes"]
         }
@@ -494,8 +496,12 @@ class Main(QMainWindow, Ui_MainWindow):
                 self.figure.canvas.draw()
                 self.figure.canvas.flush_events()
 
-                if self.solver.progress == 100 and args.show_results:
-                    self.showResults()
+                if self.solver.progress == 100:
+                    if args.show_results:
+                        self.showResults()
+
+                    if args.quit:
+                        app.quit()
 
     def showResults(self):
         if self.solver is None or self.solver.progress < 100:
@@ -543,8 +549,9 @@ if __name__ == '__main__':
     sys.stdout.flush()
 
     parser = argparse.ArgumentParser(description="Nanomotion software.")
-    parser.add_argument("-a", "--autostart", help="Immediately start the analysis.", action="store_true")
-    parser.add_argument("-r", "--show_results", help="Immediately show results after analysis.", action="store_true")
+    parser.add_argument("-a", "--autostart", help="Start the analysis.", action="store_true")
+    parser.add_argument("-r", "--show_results", help="Show the results after analysis.", action="store_true")
+    parser.add_argument("-q", "--quit", help="Quit after the analysis.", action="store_true")
 
     args = parser.parse_args()
 

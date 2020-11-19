@@ -23,8 +23,10 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
                  chop_duration=0, start_frame=0):
     print("Started plotting results.")
     opened_plots = []
-    shift_length_all = []
+
     position_all = []
+    shift_length_all = []
+    movement_per_frame_all = []
 
     for j in range(len(boxes_dict)):
         my_shift_x = shift_x[j]
@@ -89,7 +91,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         if plots_dict["view_violin"]:
             figure = plt.figure(num=output_cell_target + "violin of step length")
             plt.title("%s\n\nViolin, #%d" % (input_path, j))
-            plt.ylabel("step length, um")
+            plt.ylabel("Step length, um")
 
             sns.violinplot(data=shift_length_step_um, inner="stick")
 
@@ -107,8 +109,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             else:
                 figure = plt.figure(num=output_cell_target + "violin chopped of step length")
                 plt.title("%s\n\nViolin #%d chopped every %d sec" % (input_path, j, chop_duration))
-                plt.xlabel("frame range")
-                plt.ylabel("step length, um")
+                plt.xlabel("Frame range")
+                plt.ylabel("Step length, um")
 
                 chopped_data = []
                 labels = []
@@ -165,7 +167,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             figure = plt.figure(num=output_cell_target + "steps")
             plt.title("%s\n\nSteps, #%d" % (input_path, j))
             plt.xlabel("t, s")
-            plt.ylabel("length, um")
+            plt.ylabel("Length, um")
 
             plt.grid()
             plt.errorbar([frame / fps for frame in range(len(shift_length_step_um))], shift_length_step_um, ls=None, fmt=fmt, markersize=markersize, alpha=0.5)
@@ -180,6 +182,9 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         if plots_dict["view_violin_all_on_one"]:
             shift_length_all.append(shift_length_step_um)
+
+        if plots_dict["view_experimental"]:
+            movement_per_frame_all.append(np.sum(shift_length_step_um) / len(shift_x_step_um))
 
     if plots_dict["view_position_all_on_one"]:
         figure = plt.figure(num=output_basepath + "_all_y(x).png")
@@ -219,8 +224,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         figure = plt.figure(num=output_cell_target + "Violins (seaborn)")
         plt.title("%s\n\nViolins (seaborn), #0 to #%d" % (input_path, j))
-        plt.xlabel("Zone #")
-        plt.ylabel("step length, um")
+        plt.xlabel("Cell #")
+        plt.ylabel("Step length, um")
 
         sns.violinplot(data=shift_length_all, inner="quartiles")
 
@@ -230,6 +235,35 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
         plt.savefig("%s%s" % (output_basepath, "_violin_all_seaborn.png"))
+        opened_plots.append(figure)
+
+    if plots_dict["view_experimental"]:
+        figure = plt.figure(num=output_cell_target + "Mean movement per frame")
+        plt.title("%s\n\nMean movement per frame, #0 to #%d" % (input_path, j))
+        plt.xlabel("Cell #")
+        plt.ylabel("Length, um")
+
+        ticks = []
+        for j in range(0, len(movement_per_frame_all)):
+            plt.bar(j, movement_per_frame_all[j])
+            ticks.append(j)
+
+        mean = np.mean(movement_per_frame_all)
+        std = np.std(movement_per_frame_all)
+        print("Mean movement per frame of %d cells: %f, standard deviation: %f." % (len(movement_per_frame_all), mean, std))
+
+        j += 1
+        plt.bar(j, mean, yerr=std, capsize=3)
+        ticks.append("Mean of all cells (± SD)")
+
+        plt.xticks(range(0, len(ticks)), ticks, rotation=45, ha="right")
+
+        axe = plt.gca()
+        axe.set_ylim([0, 0.15])
+
+        plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.15)
+
+        plt.savefig("%s%s" % (output_basepath, "_movement_per_frame_all.png"))
         opened_plots.append(figure)
 
     plt.show()
