@@ -245,7 +245,11 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         ticks = []
         for j in range(0, len(movement_per_frame_all)):
-            plt.bar(j, movement_per_frame_all[j])
+            movement = movement_per_frame_all[j]
+
+            plt.bar(j, movement)
+            plt.text(j, movement, "%f" % (movement), ha="center", va="bottom")
+
             ticks.append(j)
 
         mean = np.mean(movement_per_frame_all)
@@ -254,9 +258,9 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         j += 1
         plt.bar(j, mean, yerr=std, capsize=3)
-        ticks.append("Mean of all cells (± SD)")
+        ticks.append("Mean (%f ± %f)" % (mean, std))
 
-        plt.xticks(range(0, len(ticks)), ticks, rotation=45, ha="right")
+        plt.xticks(range(0, len(ticks)), ticks, rotation=30, ha="right")
 
         axe = plt.gca()
         axe.set_ylim([0, 0.15])
