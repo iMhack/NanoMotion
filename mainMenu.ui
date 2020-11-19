@@ -718,6 +718,14 @@
     <string>y displacement [y(t)]</string>
    </property>
   </action>
+  <action name="view_position_all_on_one">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>All positions on one figure</string>
+   </property>
+  </action>
   <action name="actionShow_results">
    <property name="text">
     <string>Show results</string>
@@ -761,14 +769,6 @@
    </property>
    <property name="text">
     <string>Step length</string>
-   </property>
-  </action>
-  <action name="view_position_all_on_one">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>All positions on one figure</string>
    </property>
   </action>
  </widget>

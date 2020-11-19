@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QApplication, QFileDialog
 from PyQt5.uic import loadUiType
 from solver import Solver
 
-# To keep the tips when editing, run pyuic5 mainMenu.ui > mainMenu.py in terminal
+# To keep the tips when editing, run pyuic5 mainMenu.ui -o mainMenu.py in terminal
 Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
 
 
@@ -45,17 +45,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.actionOpen.triggered.connect(self.browseFiles)
         self.actionExport_results.triggered.connect(self.exportResults)
         self.actionSubstract.triggered.connect(self.substract)
-        # self.actionSubstract.setDisabled(True)
+        self.actionSubstract.setDisabled(True)  # TODO: improve substraction
         self.actionAdd_box.triggered.connect(self.addDraggableRectangle)
-        self.view_position_x.triggered.connect(self.plotSelection)
-        self.view_position_y.triggered.connect(self.plotSelection)
-        self.view_position.triggered.connect(self.plotSelection)
-        self.view_position_all_on_one.triggered.connect(self.plotSelection)
-        self.view_phase.triggered.connect(self.plotSelection)
-        self.view_violin.triggered.connect(self.plotSelection)
-        self.view_violin_all_on_one.triggered.connect(self.plotSelection)
-        self.view_violin_chop.triggered.connect(self.plotSelection)
-        self.view_step_length.triggered.connect(self.plotSelection)
 
         self.actionAdd_box = QtWidgets.QAction()
         self.actionAdd_box.setObjectName('actionAdd_box')
@@ -105,7 +96,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.loadParameters()
 
         self.cursor = None
-        self.plotSelection()  # set options to the booleans wanted even if the user didn't change anything
 
         self.loadAndShowFile()
 
@@ -116,6 +106,7 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.originalVideoLength != float('inf'):
             if int(self.lineEdit_start_frame.text()) >= self.originalVideoLength:
                 self.lineEdit_start_frame.setText(str(self.originalVideoLength - 1))
+
             if self.fileName != "":
                 try:
                     if update:
@@ -133,6 +124,7 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.originalVideoLength != float('inf'):
             if int(self.lineEdit_stop_frame.text()) >= self.originalVideoLength:
                 self.lineEdit_stop_frame.setText(str(self.originalVideoLength - 1))
+
             if self.fileName != "":
                 try:
                     return self.videodata.get_frame(int(self.lineEdit_stop_frame.text()))
@@ -155,22 +147,22 @@ class Main(QMainWindow, Ui_MainWindow):
             e.ignore()
 
     def dropEvent(self, e):
-        print("Event dropped.")
+        print("File dropped in the window.")
+
         if e.mimeData().hasUrls:
             for url in e.mimeData().urls():
                 fname = str(url.toLocalFile())
             self.fileName = fname
-            # print(self.fileName+" is the filename")
             self.loadAndShowFile()
 
     def mouse_event(self, e):
         self.cursor = (e.xdata, e.ydata)
-        # print(e)
 
-    def plotSelection(self):
+    def setPlotOptions(self):
         for action in self.menuView_plot.actions():
             self.plots_dict[action.objectName()] = action.isChecked()
             print("Menu option '%s' ('%s') is set to %s." % (action.objectName(), action.text(), action.isChecked()))
+
         self.lineEdit_chop_sec.setEnabled(self.view_violin_chop.isChecked())
         self.label_chop_sec.setEnabled(self.view_violin_chop.isChecked())
 
@@ -444,7 +436,9 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.solver is not None:  # remove the arrows
             self.solver.clear_annotations()
 
+        self.setPlotOptions()
         self.saveParameters()
+
         self.output_basepath = utils.create_results_directory(self.fileName, "")
         print("Tracking: %s." % (self.checkBox_track.isChecked()))
         self.solver = Solver(videodata=self.videodata,
@@ -507,7 +501,8 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.solver is None or self.solver.progress < 100:
             return
 
-        self.saveParameters()  # only save parameters if plots were successfully opened
+        self.setPlotOptions()
+        self.saveParameters()  # only save parameters if there are plots to open
 
         self.opened_plots = utils.plot_results(shift_x=self.solver.shift_x,
                                                shift_y=self.solver.shift_y,
