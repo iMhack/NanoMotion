@@ -255,6 +255,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         mean = np.mean(movement_per_frame_all)
         std = np.std(movement_per_frame_all)
         print("Mean movement per frame of %d cells: %f, standard deviation: %f." % (len(movement_per_frame_all), mean, std))
+        print("%d, %f, %f" % (len(movement_per_frame_all), mean, std))  # raw for easier copy-pasting
 
         j += 1
         plt.bar(j, mean, yerr=std, capsize=3)
@@ -311,15 +312,14 @@ def get_formatted_name(file):
         return os.path.basename(file)
 
 
-def create_results_directory(file, cell_name):
-    videofile_dir = os.path.dirname(os.path.abspath(file))
-    results_dir = os.path.join(videofile_dir, "results")
-
+def ensure_directory(file, target_name):
     formatted_name = get_formatted_name(file)
 
-    output_dir = os.path.join(results_dir, formatted_name)
+    videofile_dir = os.path.dirname(os.path.abspath(file))
+    target_dir = os.path.join(videofile_dir, target_name)
+    output_dir = os.path.join(target_dir, formatted_name)  # "videofile_dir/target_name/formatted_name"
 
-    os.makedirs(results_dir, exist_ok=True)
+    os.makedirs(target_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
 
     return os.path.join(output_dir, formatted_name)

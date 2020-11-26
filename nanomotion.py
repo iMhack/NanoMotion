@@ -36,7 +36,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.saved_boxes = {}
         self.boxes_dict = []  # list of boxes to analyse
         self.plots_dict = {}  # list of plots to plot
-        self.output_basepath = []
+        self.output_basepath = None
         self.solver = None
         self.basename = None
         self.originalVideoLength = 0
@@ -357,6 +357,7 @@ class Main(QMainWindow, Ui_MainWindow):
             self.checkBox_track.setChecked(self.json_data["parameters"]["tracking"])
             self.checkBox_compare_first.setChecked(self.json_data["parameters"]["compare_to_first"])
             self.checkBox_filter.setChecked(self.json_data["parameters"]["filter"])
+            self.checkBox_export.setChecked(self.json_data["parameters"]["export"])
 
             self.comboBox_substract_col.setCurrentText(self.json_data["extra"]["substract_type"])
             for i in plt.colormaps():
@@ -403,7 +404,8 @@ class Main(QMainWindow, Ui_MainWindow):
                 "chop_sec": int(self.lineEdit_chop_sec.text()),
                 "tracking": self.checkBox_track.isChecked(),
                 "compare_to_first": self.checkBox_compare_first.isChecked(),
-                "filter": self.checkBox_filter.isChecked()
+                "filter": self.checkBox_filter.isChecked(),
+                "export": self.checkBox_export.isChecked()
             },
             "extra": {
                 "substract_type": self.comboBox_substract_col.currentText(),
@@ -441,7 +443,13 @@ class Main(QMainWindow, Ui_MainWindow):
         self.setPlotOptions()
         self.saveParameters()
 
-        self.output_basepath = utils.create_results_directory(self.fileName, "")
+        self.output_basepath = utils.ensure_directory(self.fileName, "results")
+
+        if self.checkBox_export.isChecked():
+            write_target = utils.ensure_directory(self.fileName, "exports")
+        else:
+            write_target = None
+
         print("Tracking: %s." % (self.checkBox_track.isChecked()))
         self.solver = Solver(videodata=self.videodata,
                              fps=float(self.lineEdit_fps.text()),
@@ -453,7 +461,8 @@ class Main(QMainWindow, Ui_MainWindow):
                              track=self.checkBox_track.isChecked(),
                              compare_first=self.checkBox_compare_first.isChecked(),
                              filter=self.checkBox_filter.isChecked(),
-                             figure=self.figure
+                             figure=self.figure,
+                             write_target=write_target
                              )
 
         self.solver.progressChanged.connect(self.updateProgress)

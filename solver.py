@@ -16,7 +16,7 @@ class Solver(QThread):
     progressChanged = pyqtSignal(int, int, object)
 
     def __init__(self, videodata, fps, res, box_dict, start_frame, stop_frame, upsample_factor,
-                 track, compare_first, filter, figure, write_target=None):
+                 track, compare_first, filter, figure, write_target):
         QThread.__init__(self)
         self.videodata = videodata  # store an access to the video file to iterate over the frames
         self.figure = figure  # store the figure to draw displacement arrows
@@ -53,9 +53,7 @@ class Solver(QThread):
         self.progress = 0
         self.current_i = -1
 
-        # TODO: change write target
         self.write_target = write_target
-        # self.write_target = "./debug/out/"
 
         self.debug_frames = []
 
@@ -107,11 +105,7 @@ class Solver(QThread):
     def _filter_image_subset(self, image):
         if self.filter and len(self.debug_frames) == 0:
             image = skimage.filters.difference_of_gaussians(image, 0.5, 25)
-            image = image * skimage.filters.window('hann', image.shape)
-
-        # # Export code for debugging purposes
-        # cv2.imwrite("debug/export.png", image * 255)
-        # exit(0)
+            # image = image * skimage.filters.window('hann', image.shape)
 
         return image
 
@@ -145,7 +139,7 @@ class Solver(QThread):
 
         return colored_frame_n
 
-    def _compute_phase_corr(self):  # compute the cross correlation for all frames for the selected polygon crop
+    def _compute_phase_corr(self):  # compute the cross-correlation for all frames for the selected polygon crop
         print("self.go_on is set to %s." % (self.go_on))
 
         images = []  # last image subimages array
@@ -299,7 +293,7 @@ class Solver(QThread):
                         cv2.imwrite(("./debug/box_%d-%d.png" % (j, i)), image_n)
 
                 if self.write_target is not None:
-                    cv2.imwrite("%simage%d.png" % (self.write_target, i), colored_frame_n * 255)
+                    cv2.imwrite("%s_image_%d.png" % (self.write_target, i), colored_frame_n * 255)
 
                 self.progress = int(((i - self.start_frame) / length) * 100)
                 if self.progress > progress_pivot + 4:
