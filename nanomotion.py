@@ -433,6 +433,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def startAnalysis(self):
         self.stopAnalysis()  # ensure no analysis is already running
+        # TODO: return if an analysis is already running instead of restarting a new analysis
 
         if self.videodata is None:  # no video loaded, return gracefully
             return
@@ -465,10 +466,11 @@ class Main(QMainWindow, Ui_MainWindow):
                              write_target=write_target
                              )
 
+        self.figure.savefig("%s_overview.png" % (self.output_basepath))
+
         self.solver.progressChanged.connect(self.updateProgress)
         self.solver.start()
 
-        self.figure.savefig(self.output_basepath + "boxes_selection.png")
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateProgress)
         self.timer.start(100)

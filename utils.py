@@ -271,6 +271,9 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
         plt.savefig("%s%s" % (output_basepath, "_movement_per_frame_all.png"))
         opened_plots.append(figure)
 
+    manager = plt.get_current_fig_manager()
+    manager.resize(*manager.window.maxsize())
+
     plt.show()
 
     return opened_plots
