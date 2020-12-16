@@ -10,16 +10,7 @@ import pandas as pd
 import seaborn as sns
 
 
-def adjacent_values(vals, q1, q3):
-    upper_adjacent_value = q3 + (q3 - q1) * 1.5
-    upper_adjacent_value = np.clip(upper_adjacent_value, q3, vals[-1])
-
-    lower_adjacent_value = q1 - (q3 - q1) * 1.5
-    lower_adjacent_value = np.clip(lower_adjacent_value, vals[0], q1)
-    return lower_adjacent_value, upper_adjacent_value
-
-
-def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res, input_path, output_basepath, plots_dict, boxes_dict, chop=False,
+def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res, input_path, output_basepath, plots_dict, boxes_dict, chop=False,
                  chop_duration=0, start_frame=0):
     print("Started plotting results.")
     opened_plots = []
@@ -27,6 +18,8 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
     position_all = []
     shift_length_all = []
     movement_per_frame_all = []
+
+    output_basename = get_formatted_name(output_basepath)
 
     for j in range(len(boxes_dict)):
         my_shift_x = shift_x[j]
@@ -187,7 +180,7 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
             movement_per_frame_all.append(np.sum(shift_length_step_um) / len(shift_x_step_um))
 
     if plots_dict["view_position_all_on_one"]:
-        figure = plt.figure(num=output_basepath + "_all_y(x).png")
+        figure = plt.figure(num=output_basename + "_positions")
         plt.title("%s\n\nAll cells, y(x), #0 to #%d" % (input_path, j))
         plt.xlabel("x, um")
         plt.ylabel("y, um")
@@ -216,13 +209,13 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
-        plt.savefig("%s%s" % (output_basepath, "_all_y(x).png"))
+        plt.savefig("%s%s" % (output_basepath, "_positions.png"))
         opened_plots.append(figure)
 
     if plots_dict["view_violin_all_on_one"]:
         print("Plotting all (%d) violins containing each %d data points." % np.shape(shift_length_all))
 
-        figure = plt.figure(num=output_cell_target + "Violins (seaborn)")
+        figure = plt.figure(num=output_basename + "_violins")
         plt.title("%s\n\nViolins (seaborn), #0 to #%d" % (input_path, j))
         plt.xlabel("Cell #")
         plt.ylabel("Step length, um")
@@ -234,11 +227,11 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
-        plt.savefig("%s%s" % (output_basepath, "_violin_all_seaborn.png"))
+        plt.savefig("%s%s" % (output_basepath, "_violins.png"))
         opened_plots.append(figure)
 
     if plots_dict["view_experimental"]:
-        figure = plt.figure(num=output_cell_target + "Mean movement per frame")
+        figure = plt.figure(num=output_basename + "_means")
         plt.title("%s\n\nMean movement per frame, #0 to #%d" % (input_path, j))
         plt.xlabel("Cell #")
         plt.ylabel("Length, um")
@@ -268,44 +261,57 @@ def plot_results(shift_x, shift_y, shift_x_y_error, box_shift, shift_p, fps, res
 
         plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.15)
 
-        plt.savefig("%s%s" % (output_basepath, "_movement_per_frame_all.png"))
+        plt.savefig("%s%s" % (output_basepath, "_means.png"))
         opened_plots.append(figure)
 
-    manager = plt.get_current_fig_manager()
-    manager.resize(*manager.window.maxsize())
+        #####
+
+        figure = plt.figure(num=output_basename + "_densities")
+        plt.title("%s\n\Densities, #0 to #%d" % (input_path, j))
+        plt.xlabel("Movement, um")
+        plt.ylabel("Density")
+
+        for j in range(0, len(shift_length_all)):
+            shift_length_step_um = shift_length_all[j]
+
+            sns.displot(shift_length_step_um, kind="kde", kde_kws={"shade": True, "linewidth": 3})
+
+        # axe = plt.gca()
+        # axe.set_ylim([0, 0.15])
+
+        plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.15)
+
+        plt.savefig("%s%s" % (output_basepath, "_densities.png"))
+        opened_plots.append(figure)
 
     plt.show()
 
     return opened_plots
 
 
-def export_results(shift_x, shift_y, box_shift, fps, res, w, h, output_basepath):
+def export_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res, output_basepath, start_frame=0):
     target = "%s_output.xlsx" % (output_basepath)
     print("Exporting results to %s." % (target))
 
     df = pd.DataFrame({
         "frame": [frame for frame in range(len(shift_x))],
         "t, s": [frame / fps for frame in range(len(shift_x))],
-        "x, px": shift_x,
-        "y, px": shift_y,
+        "shift_x, px": shift_x,
+        "shift_y, px": shift_y,
+        "xy_error": shift_x_y_error,
         "box shift x, px": [shift[0] for shift in box_shift],
         "box shift y, px": [shift[1] for shift in box_shift],
-        "x, um": [x * res for x in shift_x],
-        "y, um": [y * res for y in shift_y]
+        "shift_p": shift_p
     })
 
     df = pd.concat([df, pd.DataFrame({
-        "window, px": [str(w) + " x " + str(h)],
-        "window, um": [str(w * res) + " x " + str(h * res)],
-        "um per px": [res]
+        "fps": [fps],
+        "resolution": [res],
+        "start_frame": [start_frame]
     })], axis=1)
 
-    df = df[["frame", "t, s", "x, px", "y, px", "box shift x, px", "box shift y, px", "x, um", "y, um", "window, px", "window, um", "um per px"]]
-
-    writer = pd.ExcelWriter(
-        os.path.join(target))
-    df.to_excel(excel_writer=writer, sheet_name="Sheet 1", index=False)
-    writer.save()
+    with pd.ExcelWriter(os.path.join(target)) as writer:
+        df.to_excel(writer, sheet_name="Sheet 1", index=False)
 
 
 def get_formatted_name(file):

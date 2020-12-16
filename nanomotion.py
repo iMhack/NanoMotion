@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import os
 import os.path
@@ -202,7 +203,7 @@ class Main(QMainWindow, Ui_MainWindow):
                 print("Failed to load file/folder.")
                 return
 
-        print(self.fileName)
+        print("Loaded file: '%s'." % (self.fileName))
         if self.fileName in self.json_data["boxes"]:
             self.saved_boxes = self.json_data["boxes"][self.fileName]
             print("Loaded previously saved boxes.")
@@ -543,14 +544,15 @@ class Main(QMainWindow, Ui_MainWindow):
     def exportResults(self):
         if self.solver is not None:
             for j in range(len(self.solver.box_dict)):
-                utils.export_results(shift_x=self.solver.shift_x[j],
-                                     shift_y=self.solver.shift_y[j],
-                                     box_shift=self.solver.box_shift[j],
+                utils.export_results(shift_x=self.solver.shift_x,
+                                     shift_y=self.solver.shift_y,
+                                     shift_p=self.solver.shift_p,
+                                     shift_x_y_error=self.solver.shift_x_y_error,
+                                     box_shift=self.solver.box_shift,
                                      fps=self.solver.fps,
                                      res=self.solver.res,
-                                     w=self.solver.box_dict[j].rect._width,
-                                     h=self.solver.box_dict[j].rect._height,
-                                     output_basepath=self.output_basepath + str(j))
+                                     output_basepath=self.output_basepath,
+                                     start_frame=self.solver.start_frame)
 
         print("Files exported.")
 
