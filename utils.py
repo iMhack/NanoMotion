@@ -1,13 +1,13 @@
 import math
 import os
 
-import numpy as np
-
 import matplotlib
 import matplotlib.pyplot as plt
-import mplcursors
+import numpy as np
 import pandas as pd
 import seaborn as sns
+
+import mplcursors
 
 
 def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res, input_path, output_basepath, plots_dict, boxes_dict, chop=False,
@@ -267,14 +267,14 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
         #####
 
         figure = plt.figure(num=output_basename + "_densities")
-        plt.title("%s\n\Densities, #0 to #%d" % (input_path, j))
+        plt.title("%s\n\nDensities, #0 to #%d" % (input_path, j))
         plt.xlabel("Movement, um")
         plt.ylabel("Density")
 
         for j in range(0, len(shift_length_all)):
             shift_length_step_um = shift_length_all[j]
 
-            sns.displot(shift_length_step_um, kind="kde", kde_kws={"shade": True, "linewidth": 3})
+            sns.distplot(shift_length_step_um, hist=False, kde=True, kde_kws={"shade": False, "linewidth": 3})  # , kind="kde")
 
         # axe = plt.gca()
         # axe.set_ylim([0, 0.15])
