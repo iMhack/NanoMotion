@@ -1,7 +1,6 @@
 import math
 import os
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -41,12 +40,15 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
 
         output_cell_target = "%s_cell_%d" % (output_basepath, j)
 
-        shift_x_step_um = [my_shift_x_um[i + 1] - my_shift_x_um[i] for i in range(len(my_shift_x_um) - 1)]
-        shift_y_step_um = [my_shift_y_um[i + 1] - my_shift_y_um[i] for i in range(len(my_shift_y_um) - 1)]
+        shift_x_step_um = [my_shift_x_um[i + 1] - my_shift_x_um[i]
+                           for i in range(len(my_shift_x_um) - 1)]
+        shift_y_step_um = [my_shift_y_um[i + 1] - my_shift_y_um[i]
+                           for i in range(len(my_shift_y_um) - 1)]
 
         shift_length_step_um = []
         for i in range(len(shift_x_step_um)):
-            shift_length_step_um.append(math.sqrt(math.pow(shift_x_step_um[i], 2) + math.pow(shift_y_step_um[i], 2)))
+            shift_length_step_um.append(
+                math.sqrt(math.pow(shift_x_step_um[i], 2) + math.pow(shift_y_step_um[i], 2)))
 
         ls = "--"
         fmt = "o"
@@ -95,7 +97,8 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
 
         if plots_dict["view_violin_chop"]:
             number_of_frame_in_a_chop = math.floor(chop_duration * fps)
-            number_of_full_chops = math.floor(len(shift_length_step_um) / number_of_frame_in_a_chop)
+            number_of_full_chops = math.floor(
+                len(shift_length_step_um) / number_of_frame_in_a_chop)
 
             if number_of_full_chops < 1:
                 print("WARNING: chop duration would exceed total number of frames.")
@@ -108,9 +111,11 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
                 chopped_data = []
                 labels = []
                 for i in range(number_of_full_chops):
-                    chopped_data.append(shift_length_step_um[number_of_frame_in_a_chop * i:number_of_frame_in_a_chop * (i + 1)])
+                    chopped_data.append(
+                        shift_length_step_um[number_of_frame_in_a_chop * i:number_of_frame_in_a_chop * (i + 1)])
 
-                    labels.append("[%d, %d]" % (start_frame + number_of_frame_in_a_chop * i, start_frame + number_of_frame_in_a_chop * (i + 1) - 1))
+                    labels.append("[%d, %d]" % (start_frame + number_of_frame_in_a_chop *
+                                                i, start_frame + number_of_frame_in_a_chop * (i + 1) - 1))
 
                 g = sns.violinplot(data=chopped_data, inner="stick")
                 g.set_xticklabels(labels, rotation=30)
@@ -131,7 +136,8 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
             plt.ylabel("y, um")
 
             plt.grid()
-            plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt, markersize=markersize)  # , yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
+            # , yerr=my_shift_y_um_error, xerr=my_shift_x_um_error)
+            plt.errorbar(my_shift_x_um, my_shift_y_um, ls=ls, fmt=fmt, markersize=markersize)
 
             axe = plt.gca()
             axe.set_xlim([-8, 8])
@@ -163,7 +169,8 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
             plt.ylabel("Length, um")
 
             plt.grid()
-            plt.errorbar([frame / fps for frame in range(len(shift_length_step_um))], shift_length_step_um, ls=None, fmt=fmt, markersize=markersize, alpha=0.5)
+            plt.errorbar([frame / fps for frame in range(len(shift_length_step_um))],
+                         shift_length_step_um, ls=None, fmt=fmt, markersize=markersize, alpha=0.5)
 
             plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.05)
 
@@ -197,7 +204,8 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
             x = [-e for e in y_raw]
             y = x_raw
 
-            bar = plt.errorbar(x, y, ls="-", fmt=fmt, markersize=0, alpha=0.5, label=("Box #%d" % (b)))
+            bar = plt.errorbar(x, y, ls="-", fmt=fmt, markersize=0,
+                               alpha=0.5, label=("Box #%d" % (b)))
             bars.append(bar)
 
         axe = plt.gca()
@@ -213,7 +221,8 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
         opened_plots.append(figure)
 
     if plots_dict["view_violin_all_on_one"]:
-        print("Plotting all (%d) violins containing each %d data points." % np.shape(shift_length_all))
+        print("Plotting all (%d) violins containing each %d data points." %
+              np.shape(shift_length_all))
 
         figure = plt.figure(num=output_basename + "_violins")
         plt.title("%s\n\nViolins (seaborn), #0 to #%d" % (input_path, j))
@@ -247,7 +256,8 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
 
         mean = np.mean(movement_per_frame_all)
         std = np.std(movement_per_frame_all)
-        print("Mean movement per frame of %d cells: %f, standard deviation: %f." % (len(movement_per_frame_all), mean, std))
+        print("Mean movement per frame of %d cells: %f, standard deviation: %f." %
+              (len(movement_per_frame_all), mean, std))
         print("%d, %f, %f" % (len(movement_per_frame_all), mean, std))  # raw for easier copy-pasting
 
         j += 1
@@ -274,7 +284,8 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
         for j in range(0, len(shift_length_all)):
             shift_length_step_um = shift_length_all[j]
 
-            sns.distplot(shift_length_step_um, hist=False, kde=True, kde_kws={"shade": False, "linewidth": 3})  # , kind="kde")
+            sns.distplot(shift_length_step_um, hist=False, kde=True, kde_kws={
+                         "shade": False, "linewidth": 3})  # , kind="kde")
 
         # axe = plt.gca()
         # axe.set_ylim([0, 0.15])
@@ -289,29 +300,38 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
     return opened_plots
 
 
-def export_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res, output_basepath, start_frame=0):
-    target = "%s_output.xlsx" % (output_basepath)
-    print("Exporting results to %s." % (target))
+def export_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res, output_basepath, boxes_dict, start_frame=0):
+    for j in range(len(boxes_dict)):
+        my_shift_x = shift_x[j]
+        my_shift_y = shift_y[j]
+        my_shift_p = shift_p[j]
+        my_shift_x_y_error = shift_x_y_error[j]
+        my_box_shift = box_shift[j]
 
-    df = pd.DataFrame({
-        "frame": [frame for frame in range(len(shift_x))],
-        "t, s": [frame / fps for frame in range(len(shift_x))],
-        "shift_x, px": shift_x,
-        "shift_y, px": shift_y,
-        "xy_error": shift_x_y_error,
-        "box shift x, px": [shift[0] for shift in box_shift],
-        "box shift y, px": [shift[1] for shift in box_shift],
-        "shift_p": shift_p
-    })
+        output_cell_target = "%s_cell_%d.xlsx" % (output_basepath, j)
+        print("Exporting results to %s." % (output_cell_target))
 
-    df = pd.concat([df, pd.DataFrame({
-        "fps": [fps],
-        "resolution": [res],
-        "start_frame": [start_frame]
-    })], axis=1)
+        frames = len(my_shift_x)
 
-    with pd.ExcelWriter(os.path.join(target)) as writer:
-        df.to_excel(writer, sheet_name="Sheet 1", index=False)
+        df = pd.DataFrame({
+            "frame": [frame for frame in range(frames)],
+            "t, s": [frame / fps for frame in range(frames)],
+            "shift_x, px": my_shift_x,
+            "shift_y, px": my_shift_y,
+            "xy_error": my_shift_x_y_error,
+            "box shift x, px": [shift[0] for shift in my_box_shift],
+            "box shift y, px": [shift[1] for shift in my_box_shift],
+            "shift_p": my_shift_p
+        })
+
+        df = pd.concat([df, pd.DataFrame({
+            "fps": [fps],
+            "resolution": [res],
+            "start_frame": [start_frame]
+        })], axis=1)
+
+        with pd.ExcelWriter(os.path.join(output_cell_target)) as writer:
+            df.to_excel(writer, sheet_name="Sheet 1", index=False)
 
 
 def get_formatted_name(file):
@@ -326,7 +346,8 @@ def ensure_directory(file, target_name):
 
     videofile_dir = os.path.dirname(os.path.abspath(file))
     target_dir = os.path.join(videofile_dir, target_name)
-    output_dir = os.path.join(target_dir, formatted_name)  # "videofile_dir/target_name/formatted_name"
+    # "videofile_dir/target_name/formatted_name"
+    output_dir = os.path.join(target_dir, formatted_name)
 
     os.makedirs(target_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)

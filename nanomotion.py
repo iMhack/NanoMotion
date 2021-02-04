@@ -111,7 +111,8 @@ class Main(QMainWindow, Ui_MainWindow):
             if self.fileName != "":
                 try:
                     if update:
-                        self.imshow.set_data(skimage.color.rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
+                        self.imshow.set_data(skimage.color.rgb2gray(
+                            self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
                         self.figure.canvas.draw()
                         self.figure.canvas.flush_events()
                     return self.videodata.get_frame(int(self.lineEdit_start_frame.text()))
@@ -162,7 +163,8 @@ class Main(QMainWindow, Ui_MainWindow):
     def setPlotOptions(self):
         for action in self.menuView_plot.actions():
             self.plots_dict[action.objectName()] = action.isChecked()
-            print("Menu option '%s' ('%s') is set to %s." % (action.objectName(), action.text(), action.isChecked()))
+            print("Menu option '%s' ('%s') is set to %s." %
+                  (action.objectName(), action.text(), action.isChecked()))
 
         self.lineEdit_chop_sec.setEnabled(self.view_violin_chop.isChecked())
         self.label_chop_sec.setEnabled(self.view_violin_chop.isChecked())
@@ -217,11 +219,13 @@ class Main(QMainWindow, Ui_MainWindow):
 
         shape = np.shape(self.videodata.get_frame(0))
         try:
-            self.originalVideoLength = len(self.videodata)  # try to get the video length (can vary depending on the Python environment)
+            # try to get the video length (can vary depending on the Python environment)
+            self.originalVideoLength = len(self.videodata)
         except Exception:
             print("Can't get video length.")
 
-        print("Shape of videodata[0]: %s x %d frames. Object type: %s." % (shape, self.originalVideoLength, type(self.videodata)))
+        print("Shape of videodata[0]: %s x %d frames. Object type: %s." %
+              (shape, self.originalVideoLength, type(self.videodata)))
 
         self.figure = Figure()
         sub = self.figure.add_subplot(111)
@@ -229,7 +233,8 @@ class Main(QMainWindow, Ui_MainWindow):
             self.imshow = sub.imshow(skimage.color.rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))),
                                      cmap='gray')
         except Exception:
-            self.imshow = sub.imshow(skimage.color.rgb2gray(self.videodata.get_frame(0)), cmap='gray')
+            self.imshow = sub.imshow(skimage.color.rgb2gray(
+                self.videodata.get_frame(0)), cmap='gray')
 
         self.views.addItem(self.fileName)
         self.canvas = FigureCanvas(self.figure)
@@ -256,7 +261,8 @@ class Main(QMainWindow, Ui_MainWindow):
                 print(type(cumulative_frame))
                 for i in range(stop_frame, start_frame, -int(n_frames / int(self.lineEdit_substract_lvl.text()))):
                     print(i)
-                    cumulative_frame += skimage.color.rgb2gray(self.videodata.get_frame(i)) - first_frame
+                    cumulative_frame += skimage.color.rgb2gray(
+                        self.videodata.get_frame(i)) - first_frame
 
                 self.imshow.set_data(skimage.color.rgb2gray(cumulative_frame))
                 self.imshow.set_cmap(self.comboBox_substract_col.currentText())
@@ -303,7 +309,8 @@ class Main(QMainWindow, Ui_MainWindow):
 
         ax = self.figure.add_subplot(111)
 
-        rect = patches.Rectangle(xy=(x0, y0), width=width, height=height, linewidth=1, edgecolor='r', facecolor='b', fill=False)
+        rect = patches.Rectangle(xy=(x0, y0), width=width, height=height,
+                                 linewidth=1, edgecolor='r', facecolor='b', fill=False)
         ax.add_patch(rect)
 
         text = ax.text(x=x0, y=y0, s=str(number))
@@ -356,7 +363,8 @@ class Main(QMainWindow, Ui_MainWindow):
             self.lineEdit_h.setText(str(self.json_data["parameters"]["box_height"]))
             self.lineEdit_chop_sec.setText(str(self.json_data["parameters"]["chop_sec"]))
             self.checkBox_track.setChecked(self.json_data["parameters"]["tracking"])
-            self.checkBox_compare_first.setChecked(self.json_data["parameters"]["compare_to_first"])
+            self.checkBox_compare_first.setChecked(
+                self.json_data["parameters"]["compare_to_first"])
             self.checkBox_filter.setChecked(self.json_data["parameters"]["filter"])
             self.checkBox_export.setChecked(self.json_data["parameters"]["export"])
 
@@ -373,7 +381,8 @@ class Main(QMainWindow, Ui_MainWindow):
             self.view_position.setChecked(self.json_data["actions"]["position"])
             self.view_position_x.setChecked(self.json_data["actions"]["position_x"])
             self.view_position_y.setChecked(self.json_data["actions"]["position_y"])
-            self.view_position_all_on_one.setChecked(self.json_data["actions"]["position_all_on_one"])
+            self.view_position_all_on_one.setChecked(
+                self.json_data["actions"]["position_all_on_one"])
             self.view_phase.setChecked(self.json_data["actions"]["phase"])
             self.view_violin.setChecked(self.json_data["actions"]["violin"])
             self.view_violin_chop.setChecked(self.json_data["actions"]["violin_chop"])
@@ -543,16 +552,16 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def exportResults(self):
         if self.solver is not None:
-            for j in range(len(self.solver.box_dict)):
-                utils.export_results(shift_x=self.solver.shift_x,
-                                     shift_y=self.solver.shift_y,
-                                     shift_p=self.solver.shift_p,
-                                     shift_x_y_error=self.solver.shift_x_y_error,
-                                     box_shift=self.solver.box_shift,
-                                     fps=self.solver.fps,
-                                     res=self.solver.res,
-                                     output_basepath=self.output_basepath,
-                                     start_frame=self.solver.start_frame)
+            utils.export_results(shift_x=self.solver.shift_x,
+                                 shift_y=self.solver.shift_y,
+                                 shift_p=self.solver.shift_p,
+                                 shift_x_y_error=self.solver.shift_x_y_error,
+                                 box_shift=self.solver.box_shift,
+                                 fps=self.solver.fps,
+                                 res=self.solver.res,
+                                 output_basepath=self.output_basepath,
+                                 boxes_dict=self.boxes_dict,
+                                 start_frame=self.solver.start_frame)
 
         print("Files exported.")
 
@@ -563,7 +572,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Nanomotion software.")
     parser.add_argument("-a", "--autostart", help="Start the analysis.", action="store_true")
-    parser.add_argument("-r", "--show_results", help="Show the results after analysis.", action="store_true")
+    parser.add_argument("-r", "--show_results",
+                        help="Show the results after analysis.", action="store_true")
     parser.add_argument("-q", "--quit", help="Quit after the analysis.", action="store_true")
 
     args = parser.parse_args()
