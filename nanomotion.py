@@ -92,6 +92,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.json_data = {}
 
         self.fileName = None
+        self.id = None
         self.videodata = None
 
         self.loadParameters()
@@ -197,18 +198,28 @@ class Main(QMainWindow, Ui_MainWindow):
             return
 
         try:
-            self.videodata = pims.ImageSequence(self.fileName)
-        except Exception:
-            try:
+            if os.path.isfile(self.fileName):
                 self.videodata = pims.Video(self.fileName)
-            except Exception:
-                print("Failed to load file/folder.")
-                return
+
+                with open(self.fileName, "rb") as input:
+                    self.id = hashlib.blake2b(input.read()).hexdigest()
+            else:
+                self.videodata = pims.ImageSequence(self.fileName)
+
+                self.id = self.fileName
+        except Exception:
+            print("Failed to load file/folder.")
+            return
 
         print("Loaded file: '%s'." % (self.fileName))
-        if self.fileName in self.json_data["boxes"]:
-            self.saved_boxes = self.json_data["boxes"][self.fileName]
-            print("Loaded previously saved boxes.")
+        if self.id in self.json_data["boxes"]:
+            self.saved_boxes = self.json_data["boxes"][self.id]
+
+            print("Loaded previously saved boxes (with blake2b hash).")
+        elif self.fileName in self.json_data["boxes"]:  # fallback to filename before giving up
+            self.saved_boxes = self.json_data["boxes"].pop(self.fileName)  # remove previous id
+
+            print("Loaded previously saved boxes (with filename).")
         else:
             self.saved_boxes = {}
 
@@ -398,7 +409,7 @@ class Main(QMainWindow, Ui_MainWindow):
             self.saved_boxes[str(j)]["x0"] = self.boxes_dict[j].x_rect
             self.saved_boxes[str(j)]["y0"] = self.boxes_dict[j].y_rect
 
-        self.json_data["boxes"][self.fileName] = self.saved_boxes
+        self.json_data["boxes"][self.id] = self.saved_boxes
 
         self.json_data = {
             "last_file": self.fileName,
