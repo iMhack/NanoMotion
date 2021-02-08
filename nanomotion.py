@@ -5,19 +5,19 @@ import os
 import os.path
 import sys
 
-import numpy as np
-import skimage.color
-
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
-import pims
-import utils
-from dragRectangle import DraggableRectangle
+import numpy as np
+import skimage.color
 from matplotlib.backends.backend_qt5agg import \
     FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+
+import pims
+import utils
+from dragRectangle import DraggableRectangle
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication, QFileDialog
@@ -96,6 +96,9 @@ class Main(QMainWindow, Ui_MainWindow):
         self.videodata = None
 
         self.loadParameters()
+
+        if args.open is not None:
+            self.fileName = args.open
 
         self.cursor = None
 
@@ -532,6 +535,9 @@ class Main(QMainWindow, Ui_MainWindow):
                     if args.show_results:
                         self.showResults()
 
+                    if args.export_results:
+                        self.exportResults()
+
                     if args.quit:
                         app.quit()
 
@@ -582,9 +588,12 @@ if __name__ == '__main__':
     sys.stdout.flush()
 
     parser = argparse.ArgumentParser(description="Nanomotion software.")
+    parser.add_argument("-o", "--open", help="File to open.", default=None)
     parser.add_argument("-a", "--autostart", help="Start the analysis.", action="store_true")
     parser.add_argument("-r", "--show_results",
-                        help="Show the results after analysis.", action="store_true")
+                        help="Show the results after the analysis.", action="store_true")
+    parser.add_argument("-x", "--export_results",
+                        help="Export  the results after the analysis.", action="store_true")
     parser.add_argument("-q", "--quit", help="Quit after the analysis.", action="store_true")
 
     args = parser.parse_args()

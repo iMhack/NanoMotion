@@ -327,7 +327,8 @@ def export_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, r
         df = pd.concat([df, pd.DataFrame({
             "fps": [fps],
             "resolution": [res],
-            "start_frame": [start_frame]
+            "start_frame": [start_frame],
+            "cell_number": [j]
         })], axis=1)
 
         with pd.ExcelWriter(os.path.join(output_cell_target)) as writer:
