@@ -24,8 +24,10 @@ from PyQt5.QtWidgets import QApplication, QFileDialog
 from PyQt5.uic import loadUiType
 from solver import Solver
 
-# To keep the tips when editing, run pyuic5 mainMenu.ui -o mainMenu.py in terminal
-Ui_MainWindow, QMainWindow = loadUiType('mainMenu.ui')
+dirname = os.path.dirname(__file__)
+
+# To keep the tips when editing, run pyuic5 mainMenu.ui -o mainMenu.py in the terminal
+Ui_MainWindow, QMainWindow = loadUiType(os.path.join(dirname, "mainMenu.ui"))
 
 
 class Main(QMainWindow, Ui_MainWindow):
@@ -361,7 +363,7 @@ class Main(QMainWindow, Ui_MainWindow):
             self.saved_boxes.pop(str(current))
 
     def loadParameters(self):
-        with open('settings.json', 'r') as json_file:
+        with open(os.path.join(dirname, "settings.json"), "r") as json_file:
             self.json_data = json.load(json_file)
 
             if "last_file" in self.json_data:
@@ -450,7 +452,7 @@ class Main(QMainWindow, Ui_MainWindow):
             "boxes": self.json_data["boxes"]
         }
 
-        with open('settings.json', 'w') as json_file:
+        with open(os.path.join(dirname, "settings.json"), "w") as json_file:
             json.dump(self.json_data, json_file, indent=4)
 
             print("Parameters saved.")
