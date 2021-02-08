@@ -224,6 +224,8 @@ class Main(QMainWindow, Ui_MainWindow):
         elif self.fileName in self.json_data["boxes"]:  # fallback to filename before giving up
             self.saved_boxes = self.json_data["boxes"].pop(self.fileName)  # remove previous id
 
+            self.json_data["boxes"][self.id] = self.saved_boxes  # set new id
+
             print("Loaded previously saved boxes (with filename).")
         else:
             self.saved_boxes = {}
