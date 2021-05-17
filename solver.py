@@ -3,6 +3,7 @@ import os
 
 import cv2
 import numpy as np
+import scipy as sp
 import skimage.color
 import skimage.filters
 import skimage.registration
@@ -43,6 +44,7 @@ class Solver(QThread):
         self.col_min = []
         self.col_max = []
 
+        self.pixels = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.shift_x = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.shift_y = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
         self.shift_p = [[None for _ in range(self.start_frame, self.stop_frame + 1)] for _ in self.box_dict]
@@ -104,6 +106,8 @@ class Solver(QThread):
         return image[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]
 
     def _filter_image_subset(self, image):
+        pixels = 0
+
         if self.filter and len(self.debug_frames) == 0:
             image = skimage.filters.difference_of_gaussians(image, 0.5, 25)
 
@@ -111,17 +115,51 @@ class Solver(QThread):
                 # image = image * skimage.filters.window("hann", image.shape)
                 image = image * skimage.filters.window("hamming", image.shape)
 
-        return image
+                # TODO: improve image segmentation
+                """
+                Canny segmentation
+                """
+                # edges = skimage.feature.canny(image)
+                # segmented = sp.ndimage.binary_fill_holes(edges)
+
+                """
+                Multiotsu segmentation
+                """
+                # thresholds = skimage.filters.threshold_multiotsu(image, classes=4)
+                # inner = (image > thresholds[0]) < thresholds[1]
+                # outer = skimage.util.invert((image > thresholds[1]) < thresholds[2])
+                #
+                # dilated = skimage.morphology.binary_dilation(inner, skimage.morphology.disk(3))
+                # filled = sp.ndimage.binary_fill_holes(dilated)
+                # segmented = outer + filled
+
+                # regions = np.digitize(image, bins=thresholds)
+                #
+                # image = regions
+
+                """
+                Li segmentation
+                """
+                threshold = skimage.filters.threshold_li(image)
+                segmented = sp.ndimage.binary_fill_holes(image <= threshold)
+
+                # image = segmented  # debug
+
+                pixels = np.count_nonzero(segmented)
+                # print(pixels)  # debug
+
+
+        return image, pixels
 
     def _phase_cross_correlation_wrapper(self, base, current, upsample_factor):
-        current = self._filter_image_subset(current)  # only filter 'current' image as 'base' was already filtered in the previous pass
+        current, pixels = self._filter_image_subset(current)  # only filter 'current' image as 'base' was already filtered in the previous pass
 
-        base_ft = np.fft.fft2(base)  # reusing the Fourier Transform later doesn't lead to noticeable performance improvements while preventing debugging
+        base_ft = np.fft.fft2(base)  # reusing the Fourier Transform later doesn't lead to noticeable performance improvements but instead makes debugging impossible
         current_ft = np.fft.fft2(current)
 
         shift, error, phase = skimage.registration.phase_cross_correlation(base_ft, current_ft, space="fourier", upsample_factor=upsample_factor)
 
-        return current, shift, error, phase
+        return current, pixels, shift, error, phase
 
     def _run_threading(self, parameters):
         futures = []
@@ -151,9 +189,12 @@ class Solver(QThread):
         frame_first = self._prepare_image(self.videodata.get_frame(0))  # store the first subimages for later comparison
 
         for j in range(len(self.box_dict)):  # j iterates over all boxes
-            images.append(self._filter_image_subset(self._get_image_subset(frame_first, j)))
+            image_first, pixels = self._filter_image_subset(self._get_image_subset(frame_first, j))
+            images.append(image_first)
+
             print("Box %d (%d, %d, %d, %d)." % (j, self.row_min[j], self.row_max[j], self.col_min[j], self.col_max[j]))
 
+            self.pixels[j][self.start_frame] = pixels
             self.shift_x[j][self.start_frame] = 0
             self.shift_y[j][self.start_frame] = 0
             self.shift_p[j][self.start_frame] = 0
@@ -219,7 +260,9 @@ class Solver(QThread):
                 results = self._run_threading(parameters)
 
                 for j in range(len(self.box_dict)):
-                    image_n, shift, error, phase = results[j]
+                    image_n, pixels, shift, error, phase = results[j]
+                    self.pixels[j][i] = pixels
+
                     shift[0], shift[1] = -shift[1], -shift[0]  # (-y, -x) → (x, y)
 
                     # shift[0] is the x displacement computed by comparing the first (if self.compare_first is True) or

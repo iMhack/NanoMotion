@@ -9,7 +9,7 @@ import seaborn as sns
 import mplcursors
 
 
-def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res, input_path, output_basepath, plots_dict, boxes_dict, chop=False,
+def plot_results(pixels, shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res, input_path, output_basepath, plots_dict, boxes_dict, chop=False,
                  chop_duration=0, start_frame=0):
     print("Started plotting results.")
     opened_plots = []
@@ -300,8 +300,9 @@ def plot_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res
     return opened_plots
 
 
-def export_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res, output_basepath, boxes_dict, start_frame=0):
+def export_results(pixels, shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, res, output_basepath, boxes_dict, start_frame=0):
     for j in range(len(boxes_dict)):
+        my_pixels = pixels[j]
         my_shift_x = shift_x[j]
         my_shift_y = shift_y[j]
         my_shift_p = shift_p[j]
@@ -316,6 +317,7 @@ def export_results(shift_x, shift_y, shift_p, shift_x_y_error, box_shift, fps, r
         df = pd.DataFrame({
             "frame": [frame for frame in range(frames)],
             "t, s": [frame / fps for frame in range(frames)],
+            "pixels": my_pixels,
             "shift_x, px": my_shift_x,
             "shift_y, px": my_shift_y,
             "xy_error": my_shift_x_y_error,

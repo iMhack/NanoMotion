@@ -555,7 +555,8 @@ class Main(QMainWindow, Ui_MainWindow):
         self.setPlotOptions()
         self.saveParameters()  # only save parameters if there are plots to open
 
-        self.opened_plots = utils.plot_results(shift_x=self.solver.shift_x,
+        self.opened_plots = utils.plot_results(pixels=self.solver.pixels,
+                                               shift_x=self.solver.shift_x,
                                                shift_y=self.solver.shift_y,
                                                shift_p=self.solver.shift_p,
                                                shift_x_y_error=self.solver.shift_x_y_error,
@@ -576,7 +577,8 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def exportResults(self):
         if self.solver is not None:
-            utils.export_results(shift_x=self.solver.shift_x,
+            utils.export_results(pixels=self.solver.pixels,
+                                 shift_x=self.solver.shift_x,
                                  shift_y=self.solver.shift_y,
                                  shift_p=self.solver.shift_p,
                                  shift_x_y_error=self.solver.shift_x_y_error,
