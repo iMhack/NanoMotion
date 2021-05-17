@@ -212,8 +212,10 @@ class Main(QMainWindow, Ui_MainWindow):
                 self.videodata = pims.ImageSequence(self.fileName)
 
                 self.id = self.fileName
-        except Exception:
-            print("Failed to load file/folder.")
+        except Exception as e:
+            print("Failed to load file/folder '%s'." % (self.fileName))
+            print(e)
+
             return
 
         print("Loaded file: '%s'." % (self.fileName))
@@ -363,6 +365,8 @@ class Main(QMainWindow, Ui_MainWindow):
 
         if str(current) in self.saved_boxes:
             self.saved_boxes.pop(str(current))
+        else:
+            print("Error - saved boxes: %s." % (self.saved_boxes))  # TODO: fix this
 
     def loadParameters(self):
         with open(os.path.join(dirname, "settings.json"), "r") as json_file:
@@ -413,9 +417,12 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def saveParameters(self):
         # Ensure moved boxes are saved with the updated coordinates
-        for j in range(len(self.saved_boxes)):
-            self.saved_boxes[str(j)]["x0"] = self.boxes_dict[j].x_rect
-            self.saved_boxes[str(j)]["y0"] = self.boxes_dict[j].y_rect
+        j = 0
+        for key in self.saved_boxes.keys():
+            self.saved_boxes[key]["x0"] = self.boxes_dict[j].x_rect
+            self.saved_boxes[key]["y0"] = self.boxes_dict[j].y_rect
+
+            j += 1
 
         self.json_data["boxes"][self.id] = self.saved_boxes
 
@@ -523,15 +530,14 @@ class Main(QMainWindow, Ui_MainWindow):
             if self.solver.progress == 100:
                 self.timer.stop()
 
+            current_frame = self.solver.current_i - int(self.lineEdit_start_frame.text())
+            last_frame = int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())
+
             for j in range(len(self.boxes_dict)):
                 item = self.boxes.item(j)
-                item.setText("%d - %d%% (frame %d/%d)"
-                             % (j,
-                                self.solver.progress,
-                                self.solver.current_i - int(self.lineEdit_start_frame.text()),
-                                int(self.lineEdit_stop_frame.text()) - int(self.lineEdit_start_frame.text())))
+                item.setText("%d - %d%% (frame %d/%d)" % (j, self.solver.progress, current_frame, last_frame))
 
-            if self.solver.progress == 100 or self.checkBox_live_preview.isChecked():
+            if self.solver.progress == 100 or (self.checkBox_live_preview.isChecked() and current_frame > 0):
                 self.imshow.set_data(self.solver.frame_n)
                 for r in self.boxes_dict:
                     r.update_from_solver()
