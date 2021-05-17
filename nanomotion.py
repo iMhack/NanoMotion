@@ -384,6 +384,7 @@ class Main(QMainWindow, Ui_MainWindow):
             self.checkBox_compare_first.setChecked(
                 self.json_data["parameters"]["compare_to_first"])
             self.checkBox_filter.setChecked(self.json_data["parameters"]["filter"])
+            self.checkBox_windowing.setChecked(self.json_data["parameters"]["windowing"])
             self.checkBox_export.setChecked(self.json_data["parameters"]["export"])
 
             self.comboBox_substract_col.setCurrentText(self.json_data["extra"]["substract_type"])
@@ -433,6 +434,7 @@ class Main(QMainWindow, Ui_MainWindow):
                 "tracking": self.checkBox_track.isChecked(),
                 "compare_to_first": self.checkBox_compare_first.isChecked(),
                 "filter": self.checkBox_filter.isChecked(),
+                "windowing": self.checkBox_windowing.isChecked(),
                 "export": self.checkBox_export.isChecked()
             },
             "extra": {
@@ -490,6 +492,7 @@ class Main(QMainWindow, Ui_MainWindow):
                              track=self.checkBox_track.isChecked(),
                              compare_first=self.checkBox_compare_first.isChecked(),
                              filter=self.checkBox_filter.isChecked(),
+                             windowing=self.checkBox_windowing.isChecked(),
                              figure=self.figure,
                              write_target=write_target
                              )

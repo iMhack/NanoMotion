@@ -525,6 +525,16 @@
          </widget>
         </item>
         <item row="16" column="0">
+         <widget class="QCheckBox" name="checkBox_windowing">
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>Window images</string>
+          </property>
+         </widget>
+        </item>
+        <item row="17" column="0">
          <widget class="QCheckBox" name="checkBox_export">
           <property name="layoutDirection">
            <enum>Qt::RightToLeft</enum>

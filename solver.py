@@ -16,7 +16,7 @@ class Solver(QThread):
     progressChanged = pyqtSignal(int, int, object)
 
     def __init__(self, videodata, fps, res, box_dict, start_frame, stop_frame, upsample_factor,
-                 track, compare_first, filter, figure, write_target):
+                 track, compare_first, filter, windowing, figure, write_target):
         QThread.__init__(self)
         self.videodata = videodata  # store an access to the video file to iterate over the frames
         self.figure = figure  # store the figure to draw displacement arrows
@@ -27,6 +27,7 @@ class Solver(QThread):
         self.track = track
         self.compare_first = compare_first
         self.filter = filter
+        self.windowing = windowing
 
         self.start_frame = start_frame
         self.stop_frame = stop_frame
@@ -105,7 +106,10 @@ class Solver(QThread):
     def _filter_image_subset(self, image):
         if self.filter and len(self.debug_frames) == 0:
             image = skimage.filters.difference_of_gaussians(image, 0.5, 25)
-            # image = image * skimage.filters.window('hann', image.shape)
+
+            if self.windowing:
+                # image = image * skimage.filters.window("hann", image.shape)
+                image = image * skimage.filters.window("hamming", image.shape)
 
         return image
 
@@ -132,7 +136,7 @@ class Solver(QThread):
         # TODO: correct colormap range
         # colored_subset = matplotlib.cm.magma(image_n)
 
-        mappable = matplotlib.cm.ScalarMappable(matplotlib.colors.Normalize(), matplotlib.cm.magma)
+        mappable = matplotlib.cm.ScalarMappable(matplotlib.colors.Normalize(), matplotlib.cm.cividis)
         colored_subset = mappable.to_rgba(image_n)
 
         colored_frame_n[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]] = colored_subset

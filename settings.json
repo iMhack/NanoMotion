@@ -13,7 +13,8 @@
         "tracking": false,
         "compare_to_first": true,
         "filter": true,
-        "export": false
+        "windowing": true,
+        "export": true
     },
     "extra": {
         "substract_type": "Accent",
