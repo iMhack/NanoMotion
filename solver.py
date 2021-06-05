@@ -1,4 +1,5 @@
 import concurrent.futures
+import io
 import os
 
 import cv2
@@ -17,7 +18,7 @@ class Solver(QThread):
     progressChanged = pyqtSignal(int, int, object)
 
     def __init__(self, videodata, fps, res, box_dict, start_frame, stop_frame, upsample_factor,
-                 track, compare_first, filter, windowing, figure, write_target):
+                 track, compare_first, filter, windowing, matlab, figure, write_target):
         QThread.__init__(self)
         self.videodata = videodata  # store an access to the video file to iterate over the frames
         self.figure = figure  # store the figure to draw displacement arrows
@@ -29,6 +30,8 @@ class Solver(QThread):
         self.compare_first = compare_first
         self.filter = filter
         self.windowing = windowing
+        self.matlab = matlab
+        self.matlab_engine = None
 
         self.start_frame = start_frame
         self.stop_frame = stop_frame
@@ -62,10 +65,18 @@ class Solver(QThread):
 
     def run(self):
         try:
+            if self.matlab:
+                import matlab
+                import matlab.engine
+
+                self.matlab_engine = matlab.engine.start_matlab()
             self._crop_coord()
             self._compute_phase_corr()
         except UserWarning:
             self.stop()
+
+        if self.matlab_engine is not None:
+            self.matlab_engine.quit()
 
     def stop(self):
         self.go_on = False
@@ -148,7 +159,6 @@ class Solver(QThread):
                 pixels = np.count_nonzero(segmented)
                 # print(pixels)  # debug
 
-
         return image, pixels
 
     def _phase_cross_correlation_wrapper(self, base, current, upsample_factor):
@@ -157,7 +167,20 @@ class Solver(QThread):
         base_ft = np.fft.fft2(base)  # reusing the Fourier Transform later doesn't lead to noticeable performance improvements but instead makes debugging impossible
         current_ft = np.fft.fft2(current)
 
-        shift, error, phase = skimage.registration.phase_cross_correlation(base_ft, current_ft, space="fourier", upsample_factor=upsample_factor)
+        if self.matlab is None:
+            shift, error, phase = skimage.registration.phase_cross_correlation(base_ft, current_ft, space="fourier", upsample_factor=upsample_factor)
+        else:
+            import matlab
+            import matlab.engine
+
+            reference = matlab.double(base_ft.tolist(), is_complex=True)
+            moved = matlab.double(current_ft.tolist(), is_complex=True)
+
+            # output = [error, diffphase, net_row_shift, net_col_shift]
+            output, Greg = self.matlab_engine.dftregistration(reference, moved, upsample_factor, nargout=2, stdout=io.StringIO())
+
+            error, phase, row_shift, col_shift = output[0]
+            shift = [row_shift, col_shift]
 
         return current, pixels, shift, error, phase
 
@@ -213,141 +236,142 @@ class Solver(QThread):
 
         next_frame = None
         for i in range(self.start_frame + 1, self.stop_frame + 1):  # i iterates over all frames
-            self.current_i = i
-            if self.go_on:  # condition checked to be able to stop the thread
-                if next_frame is None:
-                    self.frame_n = self._prepare_image(self.videodata.get_frame(i))
-                else:
-                    self.frame_n = self._prepare_image(next_frame.result())
-
-                    if i < self.stop_frame:  # pooling the next image helps when analyzing a low number of cells
-                        with concurrent.futures.ThreadPoolExecutor() as executor:
-                            next_frame = executor.submit(self.videodata.get_frame, i + 1)
-
-                if self.write_target is not None:
-                    colored_frame_n = skimage.color.gray2rgba(self.frame_n)  # rgb (, 3) with alpha channel (, 4) because matplotlib.cm returns one (, 4)
-
-                parameters = [None for _ in range(len(self.box_dict))]
-                for j in range(len(self.box_dict)):  # j iterates over all boxes
-                    # Propagate previous box shifts
-                    self.box_shift[j][i][0] = self.box_shift[j][i - 1][0]
-                    self.box_shift[j][i][1] = self.box_shift[j][i - 1][1]
-
-                    # Shift before analysis (for the next frame)
-                    to_shift = [0, 0]
-                    if self.track and (abs(self.cumulated_shift[j][0]) >= 1.2 or abs(self.cumulated_shift[j][1]) >= 1.2):  # arbitrary value (1.2)
-                        to_shift = [
-                            self._close_to_zero(self.cumulated_shift[j][0]),
-                            self._close_to_zero(self.cumulated_shift[j][1])
-                        ]
-
-                        print("Box %d - to shift: (%f, %f), cumulated shift: (%f, %f)." % (j, to_shift[0], to_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
-
-                        self.cumulated_shift[j][0] -= to_shift[0]
-                        self.cumulated_shift[j][1] -= to_shift[1]
-
-                        self.box_shift[j][i][0] += to_shift[0]
-                        self.box_shift[j][i][1] += to_shift[1]
-
-                        print("Box %d - shifted at frame %d (~%ds)." % (j, i, i / self.fps))
-
-                        self.box_dict[j].x_rect += to_shift[0]
-                        self.box_dict[j].y_rect += to_shift[1]
-                        self._crop_coord(j)
-
-                    parameters[j] = [images[j], self._get_image_subset(self.frame_n, j), self.upsample_factor]
-
-                results = self._run_threading(parameters)
-
-                for j in range(len(self.box_dict)):
-                    image_n, pixels, shift, error, phase = results[j]
-                    self.pixels[j][i] = pixels
-
-                    shift[0], shift[1] = -shift[1], -shift[0]  # (-y, -x) → (x, y)
-
-                    # shift[0] is the x displacement computed by comparing the first (if self.compare_first is True) or
-                    # the previous image with the current image.
-                    # shift[1] is the y displacement.
-                    #
-                    # We need to store the absolute displacement [position(t)] as shift_x and shift_y.
-                    # We can later compute the displacement relative to the previous frame [delta_position(t)].
-                    #
-                    # If compare_first is True, the shift values represent the absolute displacement.
-                    # In the other case, the shift values represent the relative displacement.
-
-                    relative_shift = [0, 0]
-                    computed_error = 0
-                    # TODO: fix error computation
-                    if self.compare_first:
-                        relative_shift = [
-                            shift[0] - self.shift_x[j][i - 1],
-                            shift[1] - self.shift_y[j][i - 1],
-                            phase - self.shift_p[j][i - 1]
-                        ]
-
-                        # computed_error = error
-                    else:
-                        relative_shift = [
-                            shift[0],
-                            shift[1],
-                            phase
-                        ]
-
-                        # computed_error = error + self.shift_x_y_error[j][i - 1]
-
-                    self.cumulated_shift[j][0] += relative_shift[0]
-                    self.cumulated_shift[j][1] += relative_shift[1]
-
-                    self.shift_x[j][i] = self.shift_x[j][i - 1] + relative_shift[0]
-                    self.shift_y[j][i] = self.shift_y[j][i - 1] + relative_shift[1]
-                    self.shift_p[j][i] = self.shift_p[j][i - 1] + relative_shift[2]
-
-                    self.shift_x_y_error[j][i] = computed_error
-
-                    # TODO: phase difference
-                    # TODO: take into account rotation (https://scikit-image.org/docs/stable/auto_examples/registration/plot_register_rotation.html).
-
-                    self._draw_arrow(j, self.shift_x[j][i] + self.box_shift[j][i][0], self.shift_y[j][i] + self.box_shift[j][i][1])
-
-                    # if j == 1:
-                    #     print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f."
-                    #           % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
-
-                    if self.write_target is not None:
-                        colored_frame_n = self._combine_subset(colored_frame_n, j, image_n)
-
-                    if not self.compare_first:  # store the current image to be compared later
-                        images[j] = image_n
-
-                    if i in self.debug_frames:
-                        print("Box %d, frame %d." % (j, i))
-                        print("Previous shift: %f, %f." % (self.shift_x[j][i - 1], self.shift_y[j][i - 1]))
-                        print("Current shift: %f, %f." % (shift[0], shift[1]))
-                        print("Relative shift: %f, %f." % (relative_shift[0], relative_shift[1]))
-
-                        os.makedirs("./debug/", exist_ok=True)
-
-                        # Previous image (i - 1 or 0): images[j]
-                        if self.compare_first:
-                            cv2.imwrite("./debug/box_%d-0.png" % (j), images[j])
-
-                            previous = self.videodata.get_frame(i - 1)[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]
-                            cv2.imwrite(("./debug/box_%d-%d_p.png" % (j, i - 1)), previous)
-                        else:
-                            cv2.imwrite(("./debug/box_%d-%d_p.png" % (j, i - 1)), images[j])
-
-                        # Current image (i): parameters[j][0]
-                        cv2.imwrite(("./debug/box_%d-%d.png" % (j, i)), image_n)
-
-                if self.write_target is not None:
-                    cv2.imwrite("%s_image_%d.png" % (self.write_target, i), colored_frame_n * 255)
-
-                self.progress = int(((i - self.start_frame) / length) * 100)
-                if self.progress > progress_pivot + 4:
-                    print("%d%% (frame %d/%d)." % (self.progress, i - self.start_frame, self.stop_frame - self.start_frame))
-                    progress_pivot = self.progress
-            else:
+            if not self.go_on:  # condition checked to be able to stop the thread
                 return
+
+            self.current_i = i
+
+            if next_frame is None:
+                self.frame_n = self._prepare_image(self.videodata.get_frame(i))
+            else:
+                self.frame_n = self._prepare_image(next_frame.result())
+
+                if i < self.stop_frame:  # pooling the next image helps when analyzing a low number of cells
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        next_frame = executor.submit(self.videodata.get_frame, i + 1)
+
+            if self.write_target is not None:
+                colored_frame_n = skimage.color.gray2rgba(self.frame_n)  # rgb (, 3) with alpha channel (, 4) because matplotlib.cm returns one (, 4)
+
+            parameters = [None for _ in range(len(self.box_dict))]
+            for j in range(len(self.box_dict)):  # j iterates over all boxes
+                # Propagate previous box shifts
+                self.box_shift[j][i][0] = self.box_shift[j][i - 1][0]
+                self.box_shift[j][i][1] = self.box_shift[j][i - 1][1]
+
+                # Shift before analysis (for the next frame)
+                to_shift = [0, 0]
+                if self.track and (abs(self.cumulated_shift[j][0]) >= 1.2 or abs(self.cumulated_shift[j][1]) >= 1.2):  # arbitrary value (1.2)
+                    to_shift = [
+                        self._close_to_zero(self.cumulated_shift[j][0]),
+                        self._close_to_zero(self.cumulated_shift[j][1])
+                    ]
+
+                    print("Box %d - to shift: (%f, %f), cumulated shift: (%f, %f)." % (j, to_shift[0], to_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1]))
+
+                    self.cumulated_shift[j][0] -= to_shift[0]
+                    self.cumulated_shift[j][1] -= to_shift[1]
+
+                    self.box_shift[j][i][0] += to_shift[0]
+                    self.box_shift[j][i][1] += to_shift[1]
+
+                    print("Box %d - shifted at frame %d (~%ds)." % (j, i, i / self.fps))
+
+                    self.box_dict[j].x_rect += to_shift[0]
+                    self.box_dict[j].y_rect += to_shift[1]
+                    self._crop_coord(j)
+
+                parameters[j] = [images[j], self._get_image_subset(self.frame_n, j), self.upsample_factor]
+
+            results = self._run_threading(parameters)
+
+            for j in range(len(self.box_dict)):
+                image_n, pixels, shift, error, phase = results[j]
+                self.pixels[j][i] = pixels
+
+                shift[0], shift[1] = -shift[1], -shift[0]  # (-y, -x) → (x, y)
+
+                # shift[0] is the x displacement computed by comparing the first (if self.compare_first is True) or
+                # the previous image with the current image.
+                # shift[1] is the y displacement.
+                #
+                # We need to store the absolute displacement [position(t)] as shift_x and shift_y.
+                # We can later compute the displacement relative to the previous frame [delta_position(t)].
+                #
+                # If compare_first is True, the shift values represent the absolute displacement.
+                # In the other case, the shift values represent the relative displacement.
+
+                relative_shift = [0, 0]
+                computed_error = 0
+                # TODO: fix error computation
+                if self.compare_first:
+                    relative_shift = [
+                        shift[0] - self.shift_x[j][i - 1],
+                        shift[1] - self.shift_y[j][i - 1],
+                        phase - self.shift_p[j][i - 1]
+                    ]
+
+                    # computed_error = error
+                else:
+                    relative_shift = [
+                        shift[0],
+                        shift[1],
+                        phase
+                    ]
+
+                    # computed_error = error + self.shift_x_y_error[j][i - 1]
+
+                self.cumulated_shift[j][0] += relative_shift[0]
+                self.cumulated_shift[j][1] += relative_shift[1]
+
+                self.shift_x[j][i] = self.shift_x[j][i - 1] + relative_shift[0]
+                self.shift_y[j][i] = self.shift_y[j][i - 1] + relative_shift[1]
+                self.shift_p[j][i] = self.shift_p[j][i - 1] + relative_shift[2]
+
+                self.shift_x_y_error[j][i] = computed_error
+
+                # TODO: phase difference
+                # TODO: take into account rotation (https://scikit-image.org/docs/stable/auto_examples/registration/plot_register_rotation.html).
+
+                self._draw_arrow(j, self.shift_x[j][i] + self.box_shift[j][i][0], self.shift_y[j][i] + self.box_shift[j][i][1])
+
+                # if j == 1:
+                #     print("Box %d - raw shift: (%f, %f), relative shift: (%f, %f), cumulated shift: (%f, %f), error: %f."
+                #           % (j, shift[0], shift[1], relative_shift[0], relative_shift[1], self.cumulated_shift[j][0], self.cumulated_shift[j][1], error))
+
+                if self.write_target is not None:
+                    colored_frame_n = self._combine_subset(colored_frame_n, j, image_n)
+
+                if not self.compare_first:  # store the current image to be compared later
+                    images[j] = image_n
+
+                if i in self.debug_frames:
+                    print("Box %d, frame %d." % (j, i))
+                    print("Previous shift: %f, %f." % (self.shift_x[j][i - 1], self.shift_y[j][i - 1]))
+                    print("Current shift: %f, %f." % (shift[0], shift[1]))
+                    print("Relative shift: %f, %f." % (relative_shift[0], relative_shift[1]))
+
+                    os.makedirs("./debug/", exist_ok=True)
+
+                    # Previous image (i - 1 or 0): images[j]
+                    if self.compare_first:
+                        cv2.imwrite("./debug/box_%d-0.png" % (j), images[j])
+
+                        previous = self.videodata.get_frame(i - 1)[self.row_min[j]:self.row_max[j], self.col_min[j]:self.col_max[j]]
+                        cv2.imwrite(("./debug/box_%d-%d_p.png" % (j, i - 1)), previous)
+                    else:
+                        cv2.imwrite(("./debug/box_%d-%d_p.png" % (j, i - 1)), images[j])
+
+                    # Current image (i): parameters[j][0]
+                    cv2.imwrite(("./debug/box_%d-%d.png" % (j, i)), image_n)
+
+            if self.write_target is not None:
+                cv2.imwrite("%s_image_%d.png" % (self.write_target, i), colored_frame_n * 255)
+
+            self.progress = int(((i - self.start_frame) / length) * 100)
+            if self.progress > progress_pivot + 4:
+                print("%d%% (frame %d/%d)." % (self.progress, i - self.start_frame, self.stop_frame - self.start_frame))
+                progress_pivot = self.progress
 
         # Post-process data (invert y-dimension)
         for j in range(len(self.box_dict)):

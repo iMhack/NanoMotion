@@ -5,14 +5,13 @@ import os
 import os.path
 import sys
 
+# Use Matplotlib 3.3.4, later versions are currently not supported
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import skimage.color
-from matplotlib.backends.backend_qt5agg import \
-    FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import \
-    NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
 import pims
@@ -117,8 +116,7 @@ class Main(QMainWindow, Ui_MainWindow):
             if self.fileName != "":
                 try:
                     if update:
-                        self.imshow.set_data(skimage.color.rgb2gray(
-                            self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
+                        self.imshow.set_data(skimage.color.rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))))
                         self.figure.canvas.draw()
                         self.figure.canvas.flush_events()
                     return self.videodata.get_frame(int(self.lineEdit_start_frame.text()))
@@ -216,6 +214,9 @@ class Main(QMainWindow, Ui_MainWindow):
             print("Failed to load file/folder '%s'." % (self.fileName))
             print(e)
 
+            if args.autostart and args.quit:  # silent quit if no file was found and automation is running
+                app.quit()
+
             return
 
         print("Loaded file: '%s'." % (self.fileName))
@@ -250,11 +251,14 @@ class Main(QMainWindow, Ui_MainWindow):
         self.figure = Figure()
         sub = self.figure.add_subplot(111)
         try:
-            self.imshow = sub.imshow(skimage.color.rgb2gray(self.videodata.get_frame(int(self.lineEdit_start_frame.text()))),
-                                     cmap='gray')
-        except Exception:
-            self.imshow = sub.imshow(skimage.color.rgb2gray(
-                self.videodata.get_frame(0)), cmap='gray')
+            display = self.videodata.get_frame(int(self.lineEdit_start_frame.text()))
+
+            self.imshow = sub.imshow(skimage.color.rgb2gray(display), cmap="gray")
+
+            print("Shown: %s." % (display.dtype))
+        except Exception as e:
+            print(e)
+            self.imshow = sub.imshow(skimage.color.rgb2gray(self.videodata.get_frame(0)), cmap="gray")
 
         self.views.addItem(self.fileName)
         self.canvas = FigureCanvas(self.figure)
@@ -293,7 +297,7 @@ class Main(QMainWindow, Ui_MainWindow):
             try:
                 print("Disabled substract.")
                 self.startFrame()
-                self.imshow.set_cmap('gray')
+                self.imshow.set_cmap("gray")
                 self.figure.canvas.draw()
             except Exception:
                 print("Unable to disable substract.")
@@ -329,8 +333,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
         ax = self.figure.add_subplot(111)
 
-        rect = patches.Rectangle(xy=(x0, y0), width=width, height=height,
-                                 linewidth=1, edgecolor='r', facecolor='b', fill=False)
+        rect = patches.Rectangle(xy=(x0, y0), width=width, height=height, linewidth=1, edgecolor='r', facecolor='b', fill=False)
         ax.add_patch(rect)
 
         text = ax.text(x=x0, y=y0, s=str(number))
@@ -390,6 +393,7 @@ class Main(QMainWindow, Ui_MainWindow):
             self.checkBox_filter.setChecked(self.json_data["parameters"]["filter"])
             self.checkBox_windowing.setChecked(self.json_data["parameters"]["windowing"])
             self.checkBox_export.setChecked(self.json_data["parameters"]["export"])
+            self.checkBox_matlab.setChecked(self.json_data["parameters"]["matlab"])
 
             self.comboBox_substract_col.setCurrentText(self.json_data["extra"]["substract_type"])
             for i in plt.colormaps():
@@ -442,7 +446,8 @@ class Main(QMainWindow, Ui_MainWindow):
                 "compare_to_first": self.checkBox_compare_first.isChecked(),
                 "filter": self.checkBox_filter.isChecked(),
                 "windowing": self.checkBox_windowing.isChecked(),
-                "export": self.checkBox_export.isChecked()
+                "export": self.checkBox_export.isChecked(),
+                "matlab": self.checkBox_matlab.isChecked()
             },
             "extra": {
                 "substract_type": self.comboBox_substract_col.currentText(),
@@ -500,6 +505,7 @@ class Main(QMainWindow, Ui_MainWindow):
                              compare_first=self.checkBox_compare_first.isChecked(),
                              filter=self.checkBox_filter.isChecked(),
                              windowing=self.checkBox_windowing.isChecked(),
+                             matlab=self.checkBox_matlab.isChecked(),
                              figure=self.figure,
                              write_target=write_target
                              )

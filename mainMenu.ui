@@ -544,6 +544,16 @@
           </property>
          </widget>
         </item>
+        <item row="18" column="0">
+         <widget class="QCheckBox" name="checkBox_matlab">
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>Use Matlab for registration</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
