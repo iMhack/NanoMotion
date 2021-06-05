@@ -122,42 +122,42 @@ class Solver(QThread):
         if self.filter and len(self.debug_frames) == 0:
             image = skimage.filters.difference_of_gaussians(image, 0.5, 25)
 
-            if self.windowing:
-                # image = image * skimage.filters.window("hann", image.shape)
-                image = image * skimage.filters.window("hamming", image.shape)
+        if self.windowing:
+            # image = image * skimage.filters.window("hann", image.shape)
+            image = image * skimage.filters.window("hamming", image.shape)
 
-                # TODO: improve image segmentation
-                """
-                Canny segmentation
-                """
-                # edges = skimage.feature.canny(image)
-                # segmented = sp.ndimage.binary_fill_holes(edges)
+            # TODO: improve image segmentation
+            """
+            Canny segmentation
+            """
+            # edges = skimage.feature.canny(image)
+            # segmented = sp.ndimage.binary_fill_holes(edges)
 
-                """
-                Multiotsu segmentation
-                """
-                # thresholds = skimage.filters.threshold_multiotsu(image, classes=4)
-                # inner = (image > thresholds[0]) < thresholds[1]
-                # outer = skimage.util.invert((image > thresholds[1]) < thresholds[2])
-                #
-                # dilated = skimage.morphology.binary_dilation(inner, skimage.morphology.disk(3))
-                # filled = sp.ndimage.binary_fill_holes(dilated)
-                # segmented = outer + filled
+            """
+            Multiotsu segmentation
+            """
+            # thresholds = skimage.filters.threshold_multiotsu(image, classes=4)
+            # inner = (image > thresholds[0]) < thresholds[1]
+            # outer = skimage.util.invert((image > thresholds[1]) < thresholds[2])
+            #
+            # dilated = skimage.morphology.binary_dilation(inner, skimage.morphology.disk(3))
+            # filled = sp.ndimage.binary_fill_holes(dilated)
+            # segmented = outer + filled
 
-                # regions = np.digitize(image, bins=thresholds)
-                #
-                # image = regions
+            # regions = np.digitize(image, bins=thresholds)
+            #
+            # image = regions
 
-                """
-                Li segmentation
-                """
-                threshold = skimage.filters.threshold_li(image)
-                segmented = sp.ndimage.binary_fill_holes(image <= threshold)
+            """
+            Li segmentation
+            """
+            threshold = skimage.filters.threshold_li(image)
+            segmented = sp.ndimage.binary_fill_holes(image <= threshold)
 
-                # image = segmented  # debug
+            # image = segmented  # debug
 
-                pixels = np.count_nonzero(segmented)
-                # print(pixels)  # debug
+            pixels = np.count_nonzero(segmented)
+            # print(pixels)  # debug
 
         return image, pixels
 
@@ -167,7 +167,7 @@ class Solver(QThread):
         base_ft = np.fft.fft2(base)  # reusing the Fourier Transform later doesn't lead to noticeable performance improvements but instead makes debugging impossible
         current_ft = np.fft.fft2(current)
 
-        if self.matlab is None:
+        if self.matlab is False:
             shift, error, phase = skimage.registration.phase_cross_correlation(base_ft, current_ft, space="fourier", upsample_factor=upsample_factor)
         else:
             import matlab
