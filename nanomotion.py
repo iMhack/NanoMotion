@@ -8,6 +8,7 @@ import sys
 # Use Matplotlib 3.3.4, later versions are currently not supported
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
+import cv2
 import numpy as np
 import skimage.color
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -511,6 +512,17 @@ class Main(QMainWindow, Ui_MainWindow):
                              )
 
         self.figure.savefig("%s_overview.png" % (self.output_basepath))
+
+        combined = skimage.color.gray2rgb(self.videodata.get_frame(int(self.lineEdit_start_frame.text())))
+        for box in self.boxes_dict:
+            rect = box.rect
+
+            top_left = (int(rect.get_x()), int(rect.get_y() + rect.get_height()))
+            bottom_right = (int(rect.get_x() + rect.get_width()), int(rect.get_y()))
+
+            combined = cv2.rectangle(combined, top_left, bottom_right, (255, 0, 0), 1)
+
+        skimage.io.imsave("%s_raw.png" % (self.output_basepath), combined)
 
         self.solver.progressChanged.connect(self.updateProgress)
         self.solver.start()

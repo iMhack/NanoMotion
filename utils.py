@@ -210,8 +210,8 @@ def plot_results(pixels, shift_x, shift_y, shift_p, shift_x_y_error, box_shift, 
 
         axe = plt.gca()
         axe.legend()
-        axe.set_xlim([-2, 2])
-        axe.set_ylim([-2, 2])
+        # axe.set_xlim([-2, 2])
+        # axe.set_ylim([-2, 2])
 
         mplcursors.cursor(bars, highlight=True)
 
